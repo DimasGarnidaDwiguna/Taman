@@ -1,0 +1,134 @@
+"""
+  TAMAN KOTA - Simulasi 3D OpenGL
+  Entry Point Utama
+
+  Kontrol:
+    W/S       - Maju / Mundur
+    A/D       - Geser Kiri / Kanan
+    Q/E       - Naik / Turun
+    Panah ←→  - Putar Kiri / Kanan
+    Panah ↑↓  - Tengok Atas / Bawah
+    ESC       - Keluar
+
+  Jalankan: python main.py
+"""
+
+import sys
+
+def check_dependencies():
+    missing = []
+    try:
+        import pygame
+    except ImportError:
+        missing.append("pygame")
+    try:
+        from OpenGL.GL import glClear
+    except ImportError:
+        missing.append("PyOpenGL")
+
+    if missing:
+        print("ERROR: Library berikut tidak ditemukan:")
+        for m in missing:
+            print(f"  - {m}")
+        print("\nJalankan: pip install -r requirements.txt")
+        sys.exit(1)
+
+check_dependencies()
+
+import pygame
+from pygame.locals import *
+from OpenGL.GL import *
+from OpenGL.GLU import *
+
+from core.renderer import Renderer
+from core.camera import Camera
+from core.state import AnimationState
+from core.lighting import setup_lighting
+
+
+WIDTH, HEIGHT = 1280, 720
+TARGET_FPS   = 60
+
+
+def print_controls():
+    print("=" * 52)
+    print("   TAMAN KOTA - Simulasi 3D OpenGL (Python)")
+    print("=" * 52)
+    print("  W / S        - Maju / Mundur")
+    print("  A / D        - Geser Kiri / Kanan")
+    print("  Q / E        - Naik / Turun")
+    print("  Panah ← →   - Putar Kiri / Kanan")
+    print("  Panah ↑ ↓   - Tengok Atas / Bawah")
+    print("  ESC          - Keluar")
+    print("=" * 52)
+
+
+def init_opengl():
+    glEnable(GL_DEPTH_TEST)
+    glEnable(GL_LIGHTING)
+    glEnable(GL_COLOR_MATERIAL)
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+    glShadeModel(GL_SMOOTH)
+    glEnable(GL_NORMALIZE)
+    glEnable(GL_FOG)
+    glFogi(GL_FOG_MODE, GL_LINEAR)
+    glFogfv(GL_FOG_COLOR, [0.67, 0.82, 0.95, 1.0])
+    glFogf(GL_FOG_START, 40.0)
+    glFogf(GL_FOG_END, 90.0)
+    glClearColor(0.67, 0.82, 0.95, 1.0)   # langit siang
+    setup_lighting()
+    _set_projection(WIDTH, HEIGHT)
+
+
+def _set_projection(w, h):
+    if h == 0:
+        h = 1
+    glViewport(0, 0, w, h)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(55.0, w / h, 0.15, 150.0)
+    glMatrixMode(GL_MODELVIEW)
+
+
+def main():
+    print_controls()
+
+    pygame.init()
+    pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | OPENGL | RESIZABLE)
+    pygame.display.set_caption("Taman Kota — OpenGL 3D | Python")
+
+    init_opengl()
+
+    camera    = Camera(x=0.0, y=16.0, z=30.0, angle_y=0.0, angle_x=-28.0)
+    anim      = AnimationState()
+    renderer  = Renderer(anim)
+    clock     = pygame.time.Clock()
+    running   = True
+
+    while running:
+        dt = clock.tick(TARGET_FPS) / 1000.0
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                running = False
+            elif event.type == KEYDOWN and event.key == K_ESCAPE:
+                running = False
+            elif event.type == VIDEORESIZE:
+                _set_projection(event.w, event.h)
+
+        keys = pygame.key.get_pressed()
+        camera.update(keys, dt)
+        anim.update(dt)
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glLoadIdentity()
+        camera.apply()
+        renderer.draw_scene()
+        pygame.display.flip()
+
+    pygame.quit()
+    sys.exit()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,29 +1,34 @@
 """
 core/lighting.py
 ----------------
-Setup pencahayaan OpenGL: matahari + cahaya langit (fill light).
+Setup pencahayaan OpenGL bergaya kartun low-poly:
+- Matahari hangat dari atas-depan-kanan
+- Fill light biru lembut dari arah berlawanan
+- Ambient besar agar warna terlihat cerah & saturated
+- Specular dimatikan untuk look matte / cartoon
 """
 
 from OpenGL.GL import *
 
 
 def setup_lighting():
-    """Dipanggil sekali saat init. Gunakan glLightfv dengan list Python."""
+    """Dipanggil sekali saat init."""
 
-    # ── Matahari (directional, sinar datang dari kanan-atas-depan) ──
+    # ── Matahari (directional, hangat) ──
     glEnable(GL_LIGHT0)
-    glLightfv(GL_LIGHT0, GL_POSITION, [8.0, 25.0, 12.0, 0.0])   # w=0 = directional
-    glLightfv(GL_LIGHT0, GL_DIFFUSE,  [1.00, 0.96, 0.88, 1.0])
-    glLightfv(GL_LIGHT0, GL_SPECULAR, [0.50, 0.50, 0.45, 1.0])
-    glLightfv(GL_LIGHT0, GL_AMBIENT,  [0.0,  0.0,  0.0,  1.0])  # ambient global di bawah
+    glLightfv(GL_LIGHT0, GL_POSITION, [10.0, 28.0, 14.0, 0.0])  # w=0 directional
+    glLightfv(GL_LIGHT0, GL_DIFFUSE,  [0.95, 0.92, 0.85, 1.0])
+    glLightfv(GL_LIGHT0, GL_SPECULAR, [0.05, 0.05, 0.05, 1.0])  # nyaris matte
+    glLightfv(GL_LIGHT0, GL_AMBIENT,  [0.0,  0.0,  0.0,  1.0])
 
-    # ── Cahaya langit / fill (arah berlawanan, warna biru dingin) ──
+    # ── Fill light dari arah berlawanan (warna langit) ──
     glEnable(GL_LIGHT1)
-    glLightfv(GL_LIGHT1, GL_POSITION, [-6.0, 10.0, -8.0, 0.0])
-    glLightfv(GL_LIGHT1, GL_DIFFUSE,  [0.35, 0.40, 0.50, 1.0])
+    glLightfv(GL_LIGHT1, GL_POSITION, [-8.0, 12.0, -10.0, 0.0])
+    glLightfv(GL_LIGHT1, GL_DIFFUSE,  [0.30, 0.38, 0.50, 1.0])
     glLightfv(GL_LIGHT1, GL_SPECULAR, [0.0,  0.0,  0.0,  1.0])
     glLightfv(GL_LIGHT1, GL_AMBIENT,  [0.0,  0.0,  0.0,  1.0])
 
-    # ── Ambient global (simulasi radiosity sederhana) ──
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.28, 0.30, 0.28, 1.0])
-    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE)
+    # ── Ambient global tinggi → look cartoon, tidak ada bayangan keras ──
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.55, 0.58, 0.60, 1.0])
+    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_FALSE)
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE)

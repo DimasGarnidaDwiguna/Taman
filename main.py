@@ -74,10 +74,10 @@ def init_opengl():
     glEnable(GL_NORMALIZE)
     glEnable(GL_FOG)
     glFogi(GL_FOG_MODE, GL_LINEAR)
-    glFogfv(GL_FOG_COLOR, [0.67, 0.82, 0.95, 1.0])
-    glFogf(GL_FOG_START, 40.0)
-    glFogf(GL_FOG_END, 90.0)
-    glClearColor(0.67, 0.82, 0.95, 1.0)   # langit siang
+    glFogfv(GL_FOG_COLOR, [0.78, 0.90, 0.99, 1.0])  # menyatu ke horizon cyan
+    glFogf(GL_FOG_START, 55.0)
+    glFogf(GL_FOG_END, 110.0)
+    glClearColor(0.78, 0.90, 0.99, 1.0)   # cyan cerah
     setup_lighting()
     _set_projection(WIDTH, HEIGHT)
 

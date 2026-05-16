@@ -1,58 +1,88 @@
 """
 environment/fence.py
 --------------------
-Pagar besi taman kota — tiang vertikal + rel horizontal.
+Pagar besi taman — tiang vertikal (picket) + rel horizontal,
+ujung tombak (finial). Warna hitam pekat ala referensi.
 """
 
 from core.primitives import color, draw_box, draw_cylinder, draw_sphere
 
 _PARK = 20.0
-_H    = 1.6    # tinggi pagar
-_POST = 1.0    # jarak antar tiang
-_RAIL_Y = [0.4, 0.9, 1.45]   # ketinggian rel horizontal
+_H    = 1.7    # tinggi pagar
+_PICKET_GAP = 0.25  # jarak antar picket vertikal
+_POST_GAP   = 4.0   # jarak antar tiang utama
+_RAIL_Y = [0.30, 1.55]   # ketinggian rel horizontal
+
+_FENCE_COLOR_DARK = (0.10, 0.10, 0.12)   # pagar utama hitam
+_FENCE_COLOR_MID  = (0.16, 0.16, 0.18)   # rel horizontal
+_PILLAR_COLOR     = (0.35, 0.35, 0.38)   # tiang utama beton/abu
 
 
-def _fence_segment(x1, z, x2, z2, vertical_axis='x'):
-    """
-    Gambar segmen pagar sepanjang satu sisi.
-    vertical_axis='x' → sepanjang sumbu X; 'z' → sepanjang sumbu Z.
-    """
-    color(0.18, 0.18, 0.22)    # besi gelap
+def _draw_picket_x(x_start, x_end, z):
+    """Picket vertikal sepanjang sumbu X."""
+    # Tiang utama (post)
+    color(*_PILLAR_COLOR)
+    pos = x_start
+    while pos <= x_end + 0.01:
+        draw_box(pos, 0.0, z, 0.18, _H + 0.20, 0.18)
+        # Topi tiang
+        draw_box(pos, _H + 0.18, z, 0.26, 0.10, 0.26)
+        pos += _POST_GAP
 
-    if vertical_axis == 'x':
-        pos = x1
-        end = x2
-        while pos <= end + 0.01:
-            draw_cylinder(pos, 0.0, z, 0.04, _H, 6)
-            draw_sphere(pos, _H + 0.06, z, 0.07)   # kepala tombak
-            pos += _POST
-        # rel horizontal
-        color(0.22, 0.22, 0.28)
-        for ry in _RAIL_Y:
-            draw_box((x1 + x2) / 2, ry, z,
-                     abs(x2 - x1) + _POST, 0.05, 0.05)
+    # Picket (besi vertikal tipis)
+    color(*_FENCE_COLOR_DARK)
+    pos = x_start + _PICKET_GAP
+    while pos < x_end - 0.01:
+        # skip jika dekat dengan tiang utama
+        nearest_post = round((pos - x_start) / _POST_GAP) * _POST_GAP + x_start
+        if abs(pos - nearest_post) > 0.18:
+            draw_box(pos, 0.04, z, 0.05, _H, 0.05)
+            # Finial (ujung tombak)
+            draw_sphere(pos, _H + 0.06, z, 0.05)
+        pos += _PICKET_GAP
 
-    else:  # sepanjang sumbu Z
-        pos = z
-        end = z2
-        while pos <= end + 0.01:
-            draw_cylinder(x1, 0.0, pos, 0.04, _H, 6)
-            draw_sphere(x1, _H + 0.06, pos, 0.07)
-            pos += _POST
-        color(0.22, 0.22, 0.28)
-        for ry in _RAIL_Y:
-            draw_box(x1, ry, (z + z2) / 2,
-                     0.05, 0.05, abs(z2 - z) + _POST)
+    # Rel horizontal
+    color(*_FENCE_COLOR_MID)
+    for ry in _RAIL_Y:
+        draw_box((x_start + x_end) / 2, ry, z,
+                 abs(x_end - x_start), 0.06, 0.06)
+
+
+def _draw_picket_z(x, z_start, z_end):
+    """Picket vertikal sepanjang sumbu Z."""
+    # Tiang utama
+    color(*_PILLAR_COLOR)
+    pos = z_start
+    while pos <= z_end + 0.01:
+        draw_box(x, 0.0, pos, 0.18, _H + 0.20, 0.18)
+        draw_box(x, _H + 0.18, pos, 0.26, 0.10, 0.26)
+        pos += _POST_GAP
+
+    # Picket
+    color(*_FENCE_COLOR_DARK)
+    pos = z_start + _PICKET_GAP
+    while pos < z_end - 0.01:
+        nearest_post = round((pos - z_start) / _POST_GAP) * _POST_GAP + z_start
+        if abs(pos - nearest_post) > 0.18:
+            draw_box(x, 0.04, pos, 0.05, _H, 0.05)
+            draw_sphere(x, _H + 0.06, pos, 0.05)
+        pos += _PICKET_GAP
+
+    # Rel horizontal
+    color(*_FENCE_COLOR_MID)
+    for ry in _RAIL_Y:
+        draw_box(x, ry, (z_start + z_end) / 2,
+                 0.06, 0.06, abs(z_end - z_start))
 
 
 def draw_fence():
-    # Depan kiri (hindari lebar gerbang ±3)
-    _fence_segment(-_PARK, 16.5, -3.5, 16.5, 'x')
-    _fence_segment( 3.5, 16.5, _PARK, 16.5, 'x')
+    # Depan kiri & kanan (hindari lebar gerbang ±3.5)
+    _draw_picket_x(-_PARK, -3.5, 16.5)
+    _draw_picket_x( 3.5,  _PARK, 16.5)
 
     # Belakang
-    _fence_segment(-_PARK, -_PARK, _PARK, -_PARK, 'x')
+    _draw_picket_x(-_PARK, _PARK, -_PARK)
 
     # Kiri & kanan
-    _fence_segment(-_PARK, -_PARK, -_PARK, 16.0, 'z')
-    _fence_segment( _PARK, -_PARK,  _PARK, 16.0, 'z')
+    _draw_picket_z(-_PARK, -_PARK, 16.0)
+    _draw_picket_z( _PARK, -_PARK, 16.0)

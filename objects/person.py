@@ -108,31 +108,41 @@ def draw_all_people(anim_time: float):
     for x, z, cr, cg, cb, a in fountain_visitors:
         draw_person(x, z, cr, cg, cb, a, phase(x, z))
 
-    # ── Anak-anak di area bermain ─────────────────────────────────
-    playground_kids = [
-        (-3.2, -6.2, 0.90, 0.40, 0.12,  22),
-        (-1.1, -7.0, 0.30, 0.70, 0.90, 120),
-        (-4.0, -9.2, 0.70, 0.90, 0.22, -60),
-        (-0.5, -5.5, 0.90, 0.22, 0.55,  70),
-    ]
-    for x, z, cr, cg, cb, a in playground_kids:
-        draw_person(x, z, cr, cg, cb, a, phase(x, z) * 1.2)
+    # ── Anak-anak di area bermain (gerakan realistis) ────────────
+    # Pusat playground sama dengan playground.py
+    PG_PX, PG_PZ = -2.0, -8.0
 
-    # ── Pelari di jogging track ───────────────────────────────────
-    jrx, jrz = 6.0, 9.0
-    jox, joz = -12.0, 0.0
-    jt = anim_time * 0.55
-
-    for offset, cr, cg, cb in [
-        (0.00, 0.90, 0.50, 0.12),
-        (1.57, 0.30, 0.50, 0.92),
-        (3.14, 0.88, 0.22, 0.22),
+    # Dua anak kejar-kejaran lari kecil di sisi selatan pasir
+    for ofs, cr, cg, cb in [
+        (0.0,     0.90, 0.40, 0.12),   # kaos oranye
+        (math.pi, 0.30, 0.70, 0.90),   # kaos biru
     ]:
-        a = jt + offset
-        jx = jox + jrx * math.cos(a)
-        jz = joz + jrz * math.sin(a)
-        face = math.degrees(math.atan2(jrz * math.cos(a), -jrx * math.sin(a)))
-        draw_person(jx, jz, cr, cg, cb, face, anim_time * 3.5 + offset, is_running=True)
+        t = anim_time * 1.0 + ofs
+        ax, az = 1.4, 0.55
+        cx, cz = PG_PX - 1.0, PG_PZ - 1.5      # center (-3.0, -9.5)
+        kx = cx + ax * math.cos(t)
+        kz = cz + az * math.sin(t)
+        vx = -ax * math.sin(t)
+        vz =  az * math.cos(t)
+        face = math.degrees(math.atan2(vz, vx))
+        draw_person(kx, kz, cr, cg, cb, face,
+                    anim_time * 4.5 + ofs, is_running=True)
+
+    # Anak berjalan bolak-balik di sisi utara pasir
+    t3 = anim_time * 0.6
+    k3x = -3.0 + math.sin(t3) * 1.8           # x ∈ [-4.8, -1.2]
+    k3z = -6.0
+    k3_face = 0 if math.cos(t3) > 0 else 180
+    draw_person(k3x, k3z, 0.70, 0.90, 0.22, k3_face,
+                anim_time * 2.6)
+
+    # Anak berjalan bolak-balik di antara slide dan monkey bars
+    t4 = anim_time * 0.55 + 1.7
+    k4x = -1.5 + math.sin(t4) * 1.2           # x ∈ [-2.7, -0.3]
+    k4z = -9.2
+    k4_face = 0 if math.cos(t4) > 0 else 180
+    draw_person(k4x, k4z, 0.90, 0.22, 0.55, k4_face,
+                anim_time * 2.4)
 
     # ── Pengunjung di area kolam ──────────────────────────────────
     pond_visitors = [

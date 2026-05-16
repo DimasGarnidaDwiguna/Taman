@@ -8,6 +8,7 @@
     Q/E       - Naik / Turun
     Panah ←→  - Putar Kiri / Kanan
     Panah ↑↓  - Tengok Atas / Bawah
+    Klik kiri + geser mouse - Rotasi kamera
     ESC       - Keluar
 
   Jalankan: python main.py
@@ -59,6 +60,7 @@ def print_controls():
     print("  Q / E        - Naik / Turun")
     print("  Panah ← →   - Putar Kiri / Kanan")
     print("  Panah ↑ ↓   - Tengok Atas / Bawah")
+    print("  Klik kiri + geser mouse - Rotasi kamera")
     print("  ESC          - Keluar")
     print("=" * 52)
 
@@ -86,7 +88,7 @@ def _set_projection(w, h):
     glViewport(0, 0, w, h)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(55.0, w / h, 0.15, 150.0)
+    gluPerspective(55.0, w / h, 0.5, 150.0)
     glMatrixMode(GL_MODELVIEW)
 
 
@@ -94,6 +96,10 @@ def main():
     print_controls()
 
     pygame.init()
+    # Minta depth buffer 24-bit (default pygame sering 16-bit → z-fighting parah
+    # antara rumput dan jalur yang ketinggiannya berdekatan).
+    pygame.display.gl_set_attribute(pygame.GL_DEPTH_SIZE, 24)
+    pygame.display.gl_set_attribute(pygame.GL_DOUBLEBUFFER, 1)
     pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | OPENGL | RESIZABLE)
     pygame.display.set_caption("Taman Kota — OpenGL 3D | Python")
 
@@ -104,6 +110,7 @@ def main():
     renderer  = Renderer(anim)
     clock     = pygame.time.Clock()
     running   = True
+    was_dragging = False
 
     while running:
         dt = clock.tick(TARGET_FPS) / 1000.0
@@ -115,6 +122,17 @@ def main():
                 running = False
             elif event.type == VIDEORESIZE:
                 _set_projection(event.w, event.h)
+
+        # ── Rotasi kamera via drag mouse (klik kiri tahan + geser) ──
+        # Pakai polling, bukan event MOUSEMOTION, supaya:
+        #  1. Tidak ada "lonjakan" di frame pertama drag (event.rel
+        #     menumpuk gerakan sebelum klik).
+        #  2. Rotasi kontinu setiap frame, mirip arrow keys.
+        mouse_pressed = pygame.mouse.get_pressed()[0]
+        mdx, mdy = pygame.mouse.get_rel()   # selalu dipanggil agar reset tiap frame
+        if mouse_pressed and was_dragging:
+            camera.rotate_by_mouse(mdx, mdy)
+        was_dragging = mouse_pressed
 
         keys = pygame.key.get_pressed()
         camera.update(keys, dt)

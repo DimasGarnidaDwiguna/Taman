@@ -93,6 +93,7 @@ python taman_kota/main.py
 | `E` | Turun |
 | `← →` (Panah) | Putar kamera horizontal |
 | `↑ ↓` (Panah) | Tengok atas/bawah |
+| Klik kiri + geser mouse | Rotasi kamera |
 | `ESC` | Keluar |
 
 ---

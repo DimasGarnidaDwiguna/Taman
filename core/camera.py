@@ -13,6 +13,7 @@ from pygame.locals import (
 
 SPEED_BASE   = 8.0   # unit/detik
 ROTATE_SPEED = 90.0  # derajat/detik
+MOUSE_SENSITIVITY = 0.25  # derajat/pixel
 
 
 class Camera:
@@ -56,6 +57,11 @@ class Camera:
             self.angle_x = min(89.0, self.angle_x + rot_sp * 0.7)
         if keys[K_DOWN]:
             self.angle_x = max(-89.0, self.angle_x - rot_sp * 0.7)
+
+    # ----------------------------------------------------------------
+    def rotate_by_mouse(self, dx: float, dy: float):
+        self.angle_y += dx * MOUSE_SENSITIVITY
+        self.angle_x = max(-89.0, min(89.0, self.angle_x - dy * MOUSE_SENSITIVITY * 0.7))
 
     # ----------------------------------------------------------------
     def apply(self):

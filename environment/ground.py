@@ -85,6 +85,12 @@ def _ring_path(cx, cz, rx, rz, segs, width, y=0.02):
 
 
 def draw_all_paths():
+    # Polygon offset menggeser depth jalur sedikit ke depan camera tanpa
+    # mengubah posisi geometris. Ini menghilangkan z-fighting (kedipan
+    # oranye pada jogging track) saat kamera bergerak dengan W/S/A/D/Q/E.
+    glEnable(GL_POLYGON_OFFSET_FILL)
+    glPolygonOffset(-1.0, -1.0)
+
     color(0.73, 0.67, 0.58)
 
     # ── Jalur masuk utama (lebar 3 m) ────────────────────────────
@@ -106,6 +112,5 @@ def draw_all_paths():
     for x1, z1, x2, z2 in radial:
         draw_path_segment(x1, z1, x2, z2, 1.2)
 
-    # ── Jogging track (elips merah-bata, kiri taman) ─────────────
-    color(0.72, 0.32, 0.18)
-    _ring_path(-12, 0, 6.0, 9.0, 64, 1.0)
+    glDisable(GL_POLYGON_OFFSET_FILL)
+    glPolygonOffset(0.0, 0.0)

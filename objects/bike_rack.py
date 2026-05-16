@@ -39,7 +39,7 @@ def draw_bicycle(x: float, z: float, color_rgb=(0.18, 0.38, 0.70)):
 
 
 def draw_bike_rack():
-    bx, bz = -14.0, 5.0
+    bx, bz = -14.0, 8.0
 
     # Plat nama rak
     color(0.20, 0.20, 0.24)

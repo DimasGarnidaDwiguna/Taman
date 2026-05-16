@@ -1,58 +1,64 @@
 """
 environment/gate.py
 -------------------
-Gerbang masuk taman kota — dua pilar bata + lengkungan + papan nama.
+Gerbang masuk taman — dua pilar bata di sisi pintu, papan nama
+"TAMAN KOTA" di ATAS (sebagai arch), dan rambu informasi/parkir
+di pinggir. Pintu di tengah dibiarkan terbuka.
 """
 
-from core.primitives import color, draw_box, draw_cylinder, draw_sphere, draw_cone
+from core.primitives import color, draw_box, draw_cylinder, draw_sphere
 
 
 def draw_gate():
-    # ── Pilar kiri & kanan ───────────────────────────────────────
-    color(0.52, 0.40, 0.28)
-    for sx in (-3.2, 3.2):
-        draw_box(sx, 0, 16.3, 0.75, 3.8, 0.75)
-        # Detail pilar: bata bergaris
-        color(0.48, 0.36, 0.24)
+    # Tinggi pilar
+    pillar_h = 3.5
+
+    # ── Pilar kiri & kanan (bata coklat hangat) ──────────────────
+    for sx in (-3.4, 3.4):
+        # Body utama
+        color(0.55, 0.40, 0.26)
+        draw_box(sx, 0, 16.3, 0.85, pillar_h, 0.85)
+        # Garis bata
+        color(0.48, 0.34, 0.20)
         for iy in range(6):
-            draw_box(sx, iy * 0.6, 16.3, 0.78, 0.06, 0.78)
-        color(0.52, 0.40, 0.28)
+            draw_box(sx, iy * 0.55, 16.3, 0.88, 0.05, 0.88)
+        # Topi pilar (lebih lebar)
+        color(0.92, 0.88, 0.78)
+        draw_box(sx, pillar_h, 16.3, 1.0, 0.20, 1.0)
+        # Bola dekorasi puncak
+        color(0.95, 0.78, 0.22)
+        draw_sphere(sx, pillar_h + 0.35, 16.3, 0.30)
 
-    # ── Lengkungan atas ──────────────────────────────────────────
-    color(0.45, 0.34, 0.22)
-    draw_box(0, 3.6, 16.3, 7.2, 0.5, 0.75)
+    # ── Arch atas: papan nama "TAMAN KOTA" di KETINGGIAN ────────
+    # Berada di y=4.4, di atas kepala, sehingga pintu di bawahnya
+    # tetap terbuka.
+    arch_y = pillar_h + 0.90    # 4.40
+    color(0.20, 0.55, 0.22)     # papan hijau
+    draw_box(0, arch_y, 16.30, 5.6, 0.80, 0.18)
+    color(0.16, 0.45, 0.18)     # bingkai tipis di belakang
+    draw_box(0, arch_y, 16.22, 5.7, 0.85, 0.05)
 
-    # ── Bola dekorasi puncak pilar ───────────────────────────────
-    color(0.75, 0.70, 0.55)
-    draw_sphere(-3.2, 4.1, 16.3, 0.38)
-    draw_sphere( 3.2, 4.1, 16.3, 0.38)
+    # Mock huruf (krem) — sekarang di atas, terlihat seperti signage
+    color(0.95, 0.92, 0.78)
+    for tx in (-1.8, -0.9, 0.0, 0.9, 1.8):
+        draw_box(tx, arch_y, 16.40, 0.45, 0.50, 0.04)
 
-    # ── Papan nama "TAMAN KOTA" ───────────────────────────────────
-    color(0.28, 0.55, 0.20)    # hijau tua
-    draw_box(0, 3.85, 16.25, 5.0, 0.70, 0.12)
-    color(0.90, 0.85, 0.70)    # teks (mock: kotak krem)
-    for i, tx in enumerate([-1.5, -0.75, 0, 0.75, 1.5]):
-        draw_box(tx, 3.92, 16.19, 0.4, 0.45, 0.04)
+    # Lengkungan dekoratif kayu di bawah papan (opsional, estetika)
+    color(0.55, 0.40, 0.26)
+    draw_box(0, arch_y - 0.50, 16.30, 5.4, 0.12, 0.16)
 
-    # ── Bollard (pembatas) ────────────────────────────────────────
-    color(0.85, 0.75, 0.20)    # kuning keemasan
-    for bx in (-2.0, -1.0, 0.0, 1.0, 2.0):
-        draw_cylinder(bx, 0, 16.7, 0.09, 0.85, 8)
-        draw_sphere(bx, 0.92, 16.7, 0.12)
+    # ── Papan informasi (jauh dari jalur, kiri gerbang) ─────────
+    color(0.30, 0.20, 0.10)
+    draw_cylinder(-7.5, 0, 16.6, 0.08, 2.2, 6)
+    color(0.20, 0.55, 0.22)
+    draw_box(-7.5, 1.2, 16.7, 2.0, 1.5, 0.15)
+    color(0.55, 0.40, 0.20)
+    draw_box(-7.5, 1.2, 16.74, 1.8, 1.3, 0.05)
 
-    # ── Papan informasi (kiri gerbang) ───────────────────────────
-    color(0.25, 0.50, 0.18)
-    draw_box(-7, 0, 16.6, 2.2, 1.8, 0.14)
-    color(0.18, 0.14, 0.08)
-    draw_cylinder(-7, 0, 16.6, 0.06, 2.0, 6)
-    # bingkai papan
-    color(0.45, 0.30, 0.12)
-    draw_box(-7, 1.2, 16.63, 2.0, 1.4, 0.04)
-
-    # ── Rambu parkir (kanan gerbang) ─────────────────────────────
-    color(0.15, 0.32, 0.68)
-    draw_box(9, 0.9, 16.6, 0.9, 0.9, 0.10)
-    color(0.18, 0.14, 0.08)
-    draw_cylinder(9, 0, 16.6, 0.05, 2.0, 6)
-    color(0.95, 0.95, 0.95)    # huruf P
-    draw_box(9, 0.9, 16.65, 0.35, 0.55, 0.03)
+    # ── Rambu parkir (jauh dari jalur, kanan gerbang) ────────────
+    color(0.18, 0.18, 0.20)
+    draw_cylinder(8.5, 0, 16.6, 0.06, 2.2, 6)
+    color(0.16, 0.36, 0.78)
+    draw_box(8.5, 1.5, 16.7, 0.85, 0.85, 0.10)
+    color(0.96, 0.96, 0.94)
+    draw_box(8.5, 1.5, 16.76, 0.40, 0.55, 0.03)

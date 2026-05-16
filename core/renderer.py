@@ -6,7 +6,8 @@ Ini satu-satunya tempat yang 'tahu' semua objek; modul objek tidak
 tahu satu sama lain.
 """
 
-from core.state import AnimationState
+from core.state  import AnimationState
+from core.layout import clear_dynamic_zones
 
 # Environment
 from environment.ground      import draw_ground, draw_all_paths
@@ -39,6 +40,9 @@ class Renderer:
     def draw_scene(self):
         a = self.anim
 
+        # Reset zona dinamis di awal frame agar tidak menumpuk
+        clear_dynamic_zones()
+
         # Langit (harus pertama, tanpa depth write)
         draw_skybox()
 
@@ -59,8 +63,8 @@ class Renderer:
         draw_pond(a.time, a.bird_angle)
 
         # Struktur
-        draw_gazebo(7.0, -9.0)
-        draw_pergola(15.0, -3.0)
+        draw_gazebo(14.0, 5.0)         # gazebo atap merah di sisi kanan
+        draw_pergola(-13.0, 4.0)       # pergola di sisi kiri
         draw_playground(a.time)
         draw_toilet()
 

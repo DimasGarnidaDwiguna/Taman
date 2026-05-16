@@ -7,11 +7,12 @@ Batu alam dekoratif berbentuk tidak beraturan (spheroid distorsi).
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from core.primitives import color
+from core.layout     import is_blocked, register_zone
 
 
 def draw_rock(x: float, z: float, scale: float = 0.4):
     r = 0.48 + (hash((x, z)) % 10) * 0.03   # sedikit variasi acak
-    color(0.48, 0.46, 0.43)
+    color(0.62, 0.58, 0.54)
     glPushMatrix()
     glTranslatef(x, scale * 0.45, z)
     glScalef(scale * 1.10, scale * 0.72, scale * 0.90)
@@ -22,7 +23,7 @@ def draw_rock(x: float, z: float, scale: float = 0.4):
     glPopMatrix()
 
     # Batu kecil di sampingnya
-    color(0.52, 0.50, 0.47)
+    color(0.68, 0.64, 0.58)
     glPushMatrix()
     glTranslatef(x + scale * 0.5, scale * 0.25, z + scale * 0.3)
     glScalef(scale * 0.55, scale * 0.40, scale * 0.48)
@@ -44,4 +45,7 @@ def draw_all_rocks():
         ( 13,  7, 0.35), (-13,  7, 0.30),
     ]
     for rx, rz, sc in data:
+        if is_blocked(rx, rz, 0.4):
+            continue
         draw_rock(rx, rz, sc)
+        register_zone(rx, rz, sc + 0.2)

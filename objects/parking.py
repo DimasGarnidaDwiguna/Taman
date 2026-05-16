@@ -1,105 +1,154 @@
 """
 objects/parking.py
 ------------------
-Area parkir: garis parkir, meter, palang, dan mobil.
+Mobil-mobil di area parkir sebelah kiri taman (slot di antara
+pagar kiri & jalan utama). Layout sesuai gambar referensi:
+deretan vertikal warna-warni cerah.
 """
 
-from core.primitives import color, draw_box, draw_cylinder, draw_sphere, draw_flat_quad
+from OpenGL.GL  import (glPushMatrix, glPopMatrix, glTranslatef, glRotatef,
+                        glScalef)
+from OpenGL.GLU import gluNewQuadric, gluCylinder, gluDisk, gluDeleteQuadric
+from core.primitives import (
+    color, draw_box, draw_cylinder, draw_sphere
+)
 
 
-def draw_car(x: float, z: float, cr: float, cg: float, cb: float, angle_deg: float = 0.0):
-    from OpenGL.GL import glPushMatrix, glTranslatef, glRotatef, glPopMatrix
+def _draw_wheel(x: float, y_center: float, z: float,
+                radius: float, width: float, axle_axis: str = 'z'):
+    """
+    Roda mobil — silinder horizontal dengan axle sepanjang sumbu Z
+    (default) atau X. Pakai gluCylinder agar normalnya halus.
+    Posisi (x, y_center, z) adalah PUSAT roda.
+    """
+    glPushMatrix()
+    glTranslatef(x, y_center, z)
+    if axle_axis == 'z':
+        # Cylinder default OpenGL tumbuh di +Z. Geser supaya pusat roda
+        # tepat di z, lalu gambar.
+        glTranslatef(0, 0, -width * 0.5)
+    else:  # axle = 'x'
+        glRotatef(90.0, 0, 1, 0)
+        glTranslatef(0, 0, -width * 0.5)
+    q = gluNewQuadric()
+    # Ban (silinder)
+    color(0.10, 0.10, 0.12)
+    gluCylinder(q, radius, radius, width, 16, 1)
+    # Tutup samping (cakram ban)
+    gluDisk(q, 0, radius, 16, 1)
+    glTranslatef(0, 0, width)
+    gluDisk(q, 0, radius, 16, 1)
+    gluDeleteQuadric(q)
+    glPopMatrix()
+
+    # Pelek (silver) di tengah ban — silinder lebih kecil & lebih tipis
+    glPushMatrix()
+    glTranslatef(x, y_center, z)
+    if axle_axis == 'z':
+        glTranslatef(0, 0, -width * 0.55)
+        rim_offset_axis = (0, 0, 1)
+    else:
+        glRotatef(90.0, 0, 1, 0)
+        glTranslatef(0, 0, -width * 0.55)
+        rim_offset_axis = (0, 0, 1)
+    q = gluNewQuadric()
+    color(0.78, 0.78, 0.78)
+    gluCylinder(q, radius * 0.55, radius * 0.55, width * 1.10, 12, 1)
+    gluDisk(q, 0, radius * 0.55, 12, 1)
+    glTranslatef(0, 0, width * 1.10)
+    gluDisk(q, 0, radius * 0.55, 12, 1)
+    gluDeleteQuadric(q)
+    glPopMatrix()
+
+
+def draw_car(x: float, z: float, cr: float, cg: float, cb: float,
+             angle_deg: float = 0.0):
+    """Mobil low-poly chunky bergaya cartoon (referensi)."""
     glPushMatrix()
     glTranslatef(x, 0, z)
     glRotatef(angle_deg, 0, 1, 0)
 
     # Badan bawah
     color(cr, cg, cb)
-    draw_box(0, 0.20, 0, 2.10, 0.55, 1.00)
+    draw_box(0, 0.32, 0, 2.10, 0.45, 1.05)
 
-    # Kabine / atap
-    color(cr * 0.88, cg * 0.88, cb * 0.88)
-    draw_box(0.05, 0.72, 0, 1.30, 0.44, 0.92)
+    # Kabine atap
+    color(cr * 0.90, cg * 0.90, cb * 0.90)
+    draw_box(0.05, 0.78, 0, 1.30, 0.48, 0.95)
 
-    # Kap mesin (sedikit miring ke depan — model box)
+    # Kap mesin
     color(cr, cg, cb)
-    draw_box(0.80, 0.62, 0, 0.48, 0.16, 0.98)
+    draw_box(0.85, 0.62, 0, 0.50, 0.18, 1.00)
 
     # Bagasi belakang
-    draw_box(-0.80, 0.58, 0, 0.48, 0.10, 0.98)
+    draw_box(-0.85, 0.60, 0, 0.50, 0.14, 1.00)
 
-    # Kaca depan
-    color(0.55, 0.80, 0.94)
-    draw_box(0.55, 0.82, 0, 0.04, 0.32, 0.88)
+    # Kaca depan/belakang/samping
+    color(0.55, 0.82, 0.95)
+    draw_box(0.55, 0.92, 0, 0.05, 0.32, 0.90)
+    draw_box(-0.50, 0.90, 0, 0.05, 0.30, 0.90)
+    draw_box(0.05, 0.92,  0.49, 1.18, 0.30, 0.04)
+    draw_box(0.05, 0.92, -0.49, 1.18, 0.30, 0.04)
 
-    # Kaca belakang
-    draw_box(-0.48, 0.80, 0, 0.04, 0.28, 0.88)
+    # ── Roda (4 buah, axle horizontal sejajar sumbu Z mobil) ────
+    wheel_r = 0.22
+    wheel_w = 0.18
+    wheel_y = wheel_r          # pusat roda = radius (agar menyentuh tanah)
+    for wx in (-0.68, 0.68):
+        # Sisi kiri (-Z) dan kanan (+Z)
+        _draw_wheel(wx, wheel_y, -0.55, wheel_r, wheel_w, axle_axis='z')
+        _draw_wheel(wx, wheel_y,  0.55 - wheel_w, wheel_r, wheel_w, axle_axis='z')
 
-    # Kaca samping (kiri & kanan)
-    color(0.60, 0.82, 0.94)
-    draw_box(0.02, 0.82,  0.47, 1.15, 0.30, 0.04)
-    draw_box(0.02, 0.82, -0.47, 1.15, 0.30, 0.04)
-
-    # Empat roda
-    color(0.12, 0.12, 0.14)
-    for wx, wz in [(-0.68, -0.53), (0.68, -0.53), (-0.68, 0.53), (0.68, 0.53)]:
-        draw_cylinder(wx, 0.08, wz, 0.24, 0.12, 12)
-
-    # Pelek roda (silver)
-    color(0.72, 0.70, 0.68)
-    for wx, wz in [(-0.68, -0.53), (0.68, -0.53), (-0.68, 0.53), (0.68, 0.53)]:
-        draw_cylinder(wx, 0.12, wz, 0.16, 0.07, 8)
-
-    # Lampu depan (kuning putih)
-    color(1.0, 0.98, 0.82)
-    draw_box(1.04, 0.44, -0.35, 0.04, 0.12, 0.20)
-    draw_box(1.04, 0.44,  0.35, 0.04, 0.12, 0.20)
-
-    # Lampu belakang (merah)
-    color(0.88, 0.10, 0.10)
-    draw_box(-1.05, 0.44, -0.35, 0.04, 0.12, 0.18)
-    draw_box(-1.05, 0.44,  0.35, 0.04, 0.12, 0.18)
+    # Lampu depan/belakang
+    color(1.0, 0.96, 0.78)
+    draw_box(1.06, 0.48, -0.36, 0.04, 0.13, 0.20)
+    draw_box(1.06, 0.48,  0.36, 0.04, 0.13, 0.20)
+    color(0.92, 0.12, 0.10)
+    draw_box(-1.06, 0.48, -0.36, 0.04, 0.13, 0.18)
+    draw_box(-1.06, 0.48,  0.36, 0.04, 0.13, 0.18)
 
     glPopMatrix()
 
 
 def draw_parking():
-    # Garis parkir putih
-    color(0.88, 0.88, 0.86)
-    px = -17.5
-    while px <= 16.0:
-        draw_box(px, 0.002, 19.0, 0.08, 0.005, 2.80)
-        px += 2.90
+    """Deretan mobil di slot parkir kiri (orientasi: nose menghadap pagar)."""
 
-    # Slot difabel (biru)
-    color(0.20, 0.38, 0.82)
-    draw_flat_quad(4.5, 17.3, 7.4, 20.0, y=0.002)
-
-    # Meter parkir (kiri area)
-    color(0.45, 0.45, 0.48)
-    draw_cylinder(-17.8, 0.0, 17.8, 0.05, 1.30, 6)
-    color(0.82, 0.52, 0.10)
-    draw_box(-17.8, 1.18, 17.8, 0.28, 0.40, 0.20)
-
-    # Palang otomatis
-    color(0.78, 0.14, 0.14)
-    draw_cylinder(-16.0, 0.0, 17.5, 0.06, 1.10, 6)
-    draw_box(-14.0, 1.05, 17.5, 4.0, 0.10, 0.10)
-    draw_box(-16.0, 1.05, 17.5, 0.10, 0.06, 0.10)
-
-    # Mobil-mobil terparkir
     cars = [
-        (-15.0, 19.0, 0.95, 0.95, 0.95),   # putih
-        (-12.0, 19.0, 0.80, 0.14, 0.14),   # merah
-        ( -9.0, 19.0, 0.32, 0.32, 0.36),   # abu-abu
-        ( -6.0, 19.0, 0.14, 0.28, 0.82),   # biru
-        ( -3.0, 19.0, 0.18, 0.52, 0.22),   # hijau
-        (  0.0, 19.0, 0.88, 0.75, 0.10),   # kuning
-        (  3.0, 19.0, 0.55, 0.20, 0.70),   # ungu
-        (  6.0, 19.0, 0.95, 0.50, 0.10),   # oranye
+        # (z, R, G, B)
+        ( 14.5, 0.95, 0.95, 0.95),   # putih
+        ( 11.5, 0.85, 0.15, 0.15),   # merah
+        (  8.5, 0.95, 0.55, 0.10),   # oranye
+        (  5.5, 0.95, 0.85, 0.18),   # kuning
+        (  2.5, 0.20, 0.62, 0.22),   # hijau
+        ( -1.5, 0.92, 0.92, 0.92),   # mobil difabel
+        ( -4.5, 0.18, 0.42, 0.85),   # biru
+        ( -7.5, 0.55, 0.20, 0.78),   # ungu
+        (-10.5, 0.18, 0.22, 0.30),   # abu gelap
     ]
-    for cx, cz, cr, cg, cb in cars:
-        draw_car(cx, cz, cr, cg, cb)
 
-    # Mobil difabel (slot biru)
-    draw_car(5.8, 19.0, 0.92, 0.92, 0.92)
+    for cz, cr, cg, cb in cars:
+        # angle 90: nose menghadap +x (ke pagar/taman)
+        draw_car(-21.0, cz, cr, cg, cb, angle_deg=90.0)
+
+    # ── Tiang lampu jalan parkir ─────────────────────────────────
+    color(0.30, 0.30, 0.34)
+    draw_cylinder(-26.0, 0.0, 12.0, 0.07, 4.0, 6)
+    color(0.85, 0.55, 0.10)
+    draw_box(-26.0, 4.05, 12.0, 0.30, 0.25, 0.25)
+    color(1.0, 0.96, 0.70)
+    draw_sphere(-25.6, 4.10, 12.0, 0.18)
+
+    draw_cylinder(-26.0, 0.0, -12.0, 0.07, 4.0, 6)
+    color(0.85, 0.55, 0.10)
+    draw_box(-26.0, 4.05, -12.0, 0.30, 0.25, 0.25)
+    color(1.0, 0.96, 0.70)
+    draw_sphere(-25.6, 4.10, -12.0, 0.18)
+
+    # ── Palang otomatis di pintu masuk parkir ────────────────────
+    color(0.20, 0.20, 0.22)
+    draw_cylinder(-22.0, 0.0, 17.5, 0.08, 1.3, 6)
+    color(0.85, 0.15, 0.15)
+    draw_box(-19.0, 1.30, 17.5, 5.5, 0.10, 0.10)
+    color(0.95, 0.95, 0.95)
+    for i in range(6):
+        draw_box(-21.5 + i * 1.0, 1.30, 17.5, 0.5, 0.11, 0.11)

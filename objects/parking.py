@@ -201,3 +201,34 @@ def draw_parking():
     color(0.95, 0.95, 0.95)
     for i in range(6):
         draw_box(-21.5 + i * 1.0, 1.30, 17.5, 0.5, 0.11, 0.11)
+
+    # ── Rambu "P" di pintu masuk parkir ──────────────────────────
+    # Tiang ramping setinggi 2.4 m, panel di y_center = 1.95
+    sign_x = -16.5
+    sign_z = 17.8
+    panel_h = 0.85
+    panel_bot = 1.50
+    panel_cy  = panel_bot + panel_h * 0.5      # 1.925
+
+    color(0.18, 0.18, 0.20)
+    draw_cylinder(sign_x, 0.0, sign_z, 0.06, 2.4, 6)
+
+    # Latar biru
+    color(0.16, 0.36, 0.78)
+    draw_box(sign_x, panel_bot, sign_z + 0.08,
+             panel_h, panel_h, 0.10)
+    # Bingkai putih
+    color(0.96, 0.96, 0.94)
+    draw_box(sign_x, panel_bot + 0.04, sign_z + 0.14,
+             panel_h - 0.08, panel_h - 0.08, 0.02)
+    # Latar biru di dalam bingkai
+    color(0.16, 0.36, 0.78)
+    draw_box(sign_x, panel_bot + 0.06, sign_z + 0.16,
+             panel_h - 0.14, panel_h - 0.14, 0.02)
+
+    # Huruf "P"
+    from core.text3d import draw_text
+    draw_text("P",
+              cx=sign_x, cy=panel_cy, cz=sign_z + 0.20,
+              height=0.55, depth=0.04,
+              color_rgb=(0.96, 0.96, 0.94))

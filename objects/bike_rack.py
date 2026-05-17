@@ -174,32 +174,38 @@ def draw_bicycle(x: float, z: float,
 def draw_bike_rack():
     bx, bz = -14.0, 8.0
 
-    # ── Papan tanda "Bike Parking" ──────────────────────────────
+    # ── Papan tanda "PARKIR SEPEDA" ─────────────────────────────
     sign_x = bx - 1.9
     sign_z = bz - 1.0
     color(0.20, 0.20, 0.24)
     draw_cylinder(sign_x, 0.0, sign_z, 0.05, 1.85, 6)
 
+    # Panel: y_bottom = 1.50, tinggi 0.55 → spans 1.50..2.05, pusat 1.775
+    panel_bot = 1.50
+    panel_h   = 0.55
+    panel_cy  = panel_bot + panel_h * 0.5
+
     # Latar biru
     color(0.18, 0.42, 0.78)
-    draw_box(sign_x, 1.55, sign_z, 0.80, 0.55, 0.05)
+    draw_box(sign_x, panel_bot, sign_z, 0.80, panel_h, 0.05)
     # Bingkai putih tipis
     color(0.95, 0.95, 0.95)
-    draw_box(sign_x, 1.55, sign_z + 0.03, 0.74, 0.49, 0.01)
+    draw_box(sign_x, panel_bot + 0.03, sign_z + 0.03,
+             0.74, panel_h - 0.06, 0.01)
     # Latar biru di dalam bingkai
     color(0.18, 0.42, 0.78)
-    draw_box(sign_x, 1.55, sign_z + 0.04, 0.70, 0.45, 0.01)
+    draw_box(sign_x, panel_bot + 0.05, sign_z + 0.04,
+             0.70, panel_h - 0.10, 0.01)
 
-    # Tulisan "PARKIR" di bagian atas papan
+    # Tulisan dua baris di tengah panel
     from core.text3d import draw_text
     draw_text("PARKIR",
-              cx=sign_x, cy=1.68, cz=sign_z + 0.06,
-              height=0.16, depth=0.02,
+              cx=sign_x, cy=panel_cy + 0.11, cz=sign_z + 0.06,
+              height=0.13, depth=0.02,
               color_rgb=(0.95, 0.95, 0.95))
-    # "SEPEDA" di bawah
     draw_text("SEPEDA",
-              cx=sign_x, cy=1.42, cz=sign_z + 0.06,
-              height=0.16, depth=0.02,
+              cx=sign_x, cy=panel_cy - 0.11, cz=sign_z + 0.06,
+              height=0.13, depth=0.02,
               color_rgb=(0.95, 0.95, 0.95))
 
     # ── Rangka rak besi ─────────────────────────────────────────

@@ -6,7 +6,8 @@ palang panjat. Warna saturated cerah (kuning, merah, biru).
 """
 
 import math
-from OpenGL.GL  import (glBegin, glEnd, glVertex3f, glNormal3f, GL_QUADS,
+from OpenGL.GL  import (glBegin, glEnd, glVertex3f, glNormal3f,
+                        GL_QUADS, GL_TRIANGLES,
                         glPushMatrix, glPopMatrix, glTranslatef, glRotatef)
 from OpenGL.GLU import gluNewQuadric, gluCylinder, gluDisk, gluDeleteQuadric
 
@@ -74,24 +75,29 @@ def draw_playground(anim_time: float):
 # ────────────────────────────────────────────────────────────────
 def _draw_slide(px, pz):
     """
-    Perosotan klasik:
-      - Platform di puncak (tinggi 1.6 m) dengan 4 tiang sudut
-      - Tangga miring di belakang platform (dengan stringer + treads + handrail)
-      - Bidang luncur kuning dari tepi depan platform ke tanah
-      - Atap segitiga kecil di atas platform
+    Perosotan klasik dengan platform, tangga, perosotan kuning, dan atap.
+
     Orientasi:
-      - Tangga di sisi -X (belakang)
-      - Slide meluncur ke +X (ke depan/timur)
+      - Tangga di sisi -X (belakang platform)
+      - Perosotan meluncur ke +X (depan)
+
+    Tinggi-tinggi penting:
+      0.00       = tanah
+      deck_y      = 1.60   permukaan atas deck (tempat anak berdiri)
+      rail_y      = 2.45   bagian atas railing pengaman deck
+      eave_y      = 2.50   pangkal kemiringan atap
+      ridge_y     = 3.10   puncak atap
     """
 
     # ── Konstanta geometri ─────────────────────────────────────
-    top_y       = 1.60               # tinggi platform
-    plat_x      = px - 1.6           # x-pusat platform
-    plat_w      = 0.95               # ukuran platform sumbu X
-    plat_d      = 1.05               # ukuran platform sumbu Z
+    deck_y      = 1.60               # permukaan atas deck (pijakan anak)
+    deck_th     = 0.10               # ketebalan papan deck
+    plat_x      = px - 1.6           # x-pusat deck
+    plat_w      = 0.95               # ukuran deck sumbu X
+    plat_d      = 1.05               # ukuran deck sumbu Z
     slide_x_end = plat_x + 2.80      # ujung bawah perosotan
     slide_w     = 0.85               # lebar bidang luncur (sumbu Z)
-    rail_h      = 0.40               # tinggi rel pengaman
+    rail_h      = 0.85               # tinggi railing pengaman dari deck
     post_t      = 0.12               # tebal tiang biru
 
     BLUE     = (0.18, 0.55, 0.92)
@@ -101,144 +107,184 @@ def _draw_slide(px, pz):
     RED      = (0.92, 0.22, 0.18)
     RED_D    = (0.78, 0.16, 0.12)
 
-    # ── 4 tiang sudut platform ─────────────────────────────────
+    rail_y = deck_y + rail_h         # 2.45 — atas railing
+    deck_top = deck_y                # alias untuk kejelasan
+    deck_bot = deck_y - deck_th      # bagian bawah papan deck
+
+    # ── 4 tiang sudut (membentang dari tanah ke atap) ──────────
+    # Tiang ini SEKALIGUS jadi tiang penyangga atap, jadi tingginya
+    # sampai eave (2.50). Atap akan duduk persis di atasnya.
+    eave_y = rail_y + 0.05
     color(*BLUE)
     posts = [
-        (plat_x - plat_w * 0.5,  plat_d * 0.5),  # back-front
-        (plat_x - plat_w * 0.5, -plat_d * 0.5),  # back-back
-        (plat_x + plat_w * 0.5,  plat_d * 0.5),  # front-front
-        (plat_x + plat_w * 0.5, -plat_d * 0.5),  # front-back
+        (plat_x - plat_w * 0.5, -plat_d * 0.5),  # back-left
+        (plat_x - plat_w * 0.5,  plat_d * 0.5),  # back-right
+        (plat_x + plat_w * 0.5, -plat_d * 0.5),  # front-left
+        (plat_x + plat_w * 0.5,  plat_d * 0.5),  # front-right
     ]
     for ox, oz in posts:
-        draw_box(ox, 0.04, pz + oz, post_t, top_y, post_t)
+        draw_box(ox, 0.0, pz + oz, post_t, eave_y, post_t)
 
-    # ── Platform atas (papan biru gelap, tepi dipertegas) ───────
+    # ── Papan deck (biru gelap) ────────────────────────────────
     color(*BLUE_D)
-    draw_box(plat_x, top_y, pz, plat_w, 0.10, plat_d)
-    color(*BLUE)
-    # Tepi tipis di sekeliling sebagai trim
-    draw_box(plat_x, top_y + 0.05, pz - plat_d * 0.5, plat_w, 0.08, 0.05)
-    draw_box(plat_x, top_y + 0.05, pz + plat_d * 0.5, plat_w, 0.08, 0.05)
-    draw_box(plat_x - plat_w * 0.5, top_y + 0.05, pz, 0.05, 0.08, plat_d)
+    draw_box(plat_x, deck_bot, pz, plat_w, deck_th, plat_d)
 
-    # Pegangan/portal di sisi tangga (back side) — arch agar anak
-    # tidak jatuh ke arah depan saat naik
+    # ── Railing samping (kiri & kanan deck, sumbu X) ───────────
+    # Top rail di rail_y, mid rail di rail_y - 0.45 (sekitar pinggang)
+    # Hanya dipasang di sisi -Z dan +Z; sisi belakang (-X) terbuka untuk
+    # arch tangga; sisi depan (+X) terbuka karena slide-nya keluar dari sana.
     color(*BLUE)
-    arch_h = 0.85
-    draw_box(plat_x - plat_w * 0.5, top_y + arch_h, pz, post_t, post_t, plat_d)
     for oz in (-plat_d * 0.5, plat_d * 0.5):
-        draw_box(plat_x - plat_w * 0.5, top_y + arch_h * 0.5, pz + oz,
-                 post_t, arch_h, post_t)
+        # Top rail
+        draw_box(plat_x, rail_y - 0.04, pz + oz, plat_w, 0.08, 0.06)
+        # Mid rail
+        draw_box(plat_x, deck_y + rail_h * 0.45, pz + oz,
+                 plat_w, 0.06, 0.05)
+        # Vertical balusters (3 buah per sisi)
+        for ix in (-plat_w * 0.30, 0.0, plat_w * 0.30):
+            draw_box(plat_x + ix, deck_y, pz + oz,
+                     0.04, rail_h, 0.04)
 
-    # ── Atap segitiga kecil di atas platform ──────────────────
-    # Dua quad miring membentuk peak roof (sumbu peak sepanjang X)
-    roof_base_y = top_y + 0.10
-    roof_peak_y = roof_base_y + 0.55
-    roof_overhang = 0.10
-    rx_min = plat_x - plat_w * 0.5 - roof_overhang
-    rx_max = plat_x + plat_w * 0.5 + roof_overhang
-    rz_left  = pz - plat_d * 0.5 - roof_overhang
-    rz_right = pz + plat_d * 0.5 + roof_overhang
+    # ── Arch belakang (di atas mulut tangga, sisi -X) ──────────
+    # Hanya 2 tiang vertikal pendek + palang horizontal, semuanya
+    # di BAWAH eave agar tidak menerobos atap.
+    color(*BLUE)
+    for oz in (-plat_d * 0.5, plat_d * 0.5):
+        draw_box(plat_x - plat_w * 0.5, deck_y, pz + oz,
+                 post_t, rail_h, post_t)
+    # Palang atas tepat di rail_y
+    draw_box(plat_x - plat_w * 0.5, rail_y - 0.04, pz,
+             post_t, 0.08, plat_d)
 
-    # Sisi kiri (-Z) miring ke atas-tengah
+    # ── Atap pelana (gable roof) ───────────────────────────────
+    # Pangkal atap (eave) sedikit di atas top rail; ridge di tengah Z.
+    ridge_y     = eave_y + 0.60
+    overhang_x  = 0.18
+    overhang_z  = 0.18
+    rx_min = plat_x - plat_w * 0.5 - overhang_x
+    rx_max = plat_x + plat_w * 0.5 + overhang_x
+    rz_left  = pz - plat_d * 0.5 - overhang_z
+    rz_right = pz + plat_d * 0.5 + overhang_z
+
+    # Sisi kiri (-Z) miring ke ridge
     color(*RED)
     glBegin(GL_QUADS)
     glNormal3f(0, 0.7, -0.7)
-    glVertex3f(rx_min, roof_base_y, rz_left)
-    glVertex3f(rx_max, roof_base_y, rz_left)
-    glVertex3f(rx_max, roof_peak_y, pz)
-    glVertex3f(rx_min, roof_peak_y, pz)
+    glVertex3f(rx_min, eave_y,  rz_left)
+    glVertex3f(rx_max, eave_y,  rz_left)
+    glVertex3f(rx_max, ridge_y, pz)
+    glVertex3f(rx_min, ridge_y, pz)
     glEnd()
+
     # Sisi kanan (+Z)
     color(*RED_D)
     glBegin(GL_QUADS)
     glNormal3f(0, 0.7, 0.7)
-    glVertex3f(rx_min, roof_peak_y, pz)
-    glVertex3f(rx_max, roof_peak_y, pz)
-    glVertex3f(rx_max, roof_base_y, rz_right)
-    glVertex3f(rx_min, roof_base_y, rz_right)
+    glVertex3f(rx_min, ridge_y, pz)
+    glVertex3f(rx_max, ridge_y, pz)
+    glVertex3f(rx_max, eave_y,  rz_right)
+    glVertex3f(rx_min, eave_y,  rz_right)
     glEnd()
-    # Tutup gable depan/belakang (segitiga)
+
+    # Tutup gable (segitiga) di sisi -X dan +X
     color(*RED_D)
-    for x_face in (rx_min, rx_max):
-        glBegin(GL_QUADS)
-        glNormal3f(-1 if x_face == rx_min else 1, 0, 0)
-        glVertex3f(x_face, roof_base_y, rz_left)
-        glVertex3f(x_face, roof_peak_y, pz)
-        glVertex3f(x_face, roof_peak_y, pz)
-        glVertex3f(x_face, roof_base_y, rz_right)
+    for x_face, nx in ((rx_min, -1.0), (rx_max, 1.0)):
+        glBegin(GL_TRIANGLES)
+        glNormal3f(nx, 0, 0)
+        glVertex3f(x_face, eave_y,  rz_left)
+        glVertex3f(x_face, eave_y,  rz_right)
+        glVertex3f(x_face, ridge_y, pz)
         glEnd()
 
-    # ── Tangga miring di belakang platform ─────────────────────
-    # Tangga membentang dari (plat_x - plat_w*0.5) ke (plat_x - plat_w*0.5 - 1.2)
-    n_steps = 5
-    stair_run   = 0.28          # jarak horizontal antar anak tangga
+    # ── Tangga miring di belakang platform (sisi -X) ───────────
+    n_steps     = 5
+    stair_run   = 0.28              # jarak horizontal antar anak tangga
     stair_x_top = plat_x - plat_w * 0.5
     stair_x_bot = stair_x_top - n_steps * stair_run
+    stair_d     = plat_d * 0.92     # lebar tangga (sumbu Z)
 
-    # Stringer (papan miring di kedua sisi tangga) — pakai quad miring
+    # Stringer (panel segitiga di kedua sisi tangga)
     color(*BLUE_D)
-    for side_z in (-plat_d * 0.5, plat_d * 0.5):
-        glBegin(GL_QUADS)
+    for side_z in (-stair_d * 0.5, stair_d * 0.5):
+        glBegin(GL_TRIANGLES)
         glNormal3f(0, 0, 1 if side_z > 0 else -1)
-        glVertex3f(stair_x_top, top_y,   pz + side_z)
-        glVertex3f(stair_x_top, 0.0,     pz + side_z)
-        glVertex3f(stair_x_bot, 0.0,     pz + side_z)
-        glVertex3f(stair_x_bot, 0.05,    pz + side_z)
+        glVertex3f(stair_x_top, deck_y, pz + side_z)
+        glVertex3f(stair_x_top, 0.0,    pz + side_z)
+        glVertex3f(stair_x_bot, 0.0,    pz + side_z)
         glEnd()
 
-    # Anak tangga merah (treads horizontal antara dua stringer)
+    # Anak tangga merah
     color(*RED)
-    rise = top_y / n_steps
+    rise = deck_y / n_steps
     for i in range(n_steps):
-        sy = rise * (i + 1) - 0.05
-        sx = stair_x_top - i * stair_run - stair_run * 0.5
-        draw_box(sx, sy, pz, 0.30, 0.07, plat_d * 0.92)
+        sy = rise * (i + 1) - 0.04
+        sx = stair_x_bot + i * stair_run + stair_run * 0.5
+        draw_box(sx, sy, pz, stair_run, 0.06, stair_d)
 
-    # Pegangan tangga (handrail) — silinder miring di kedua sisi
+    # Handrail tangga
     color(*BLUE)
-    for side_z in (-plat_d * 0.5 - 0.04, plat_d * 0.5 + 0.04):
-        # Tiang awal (atas) & ujung (bawah)
-        draw_box(stair_x_top, top_y, pz + side_z, post_t * 0.7, 0.55,
-                 post_t * 0.7)
-        draw_box(stair_x_bot, 0.04, pz + side_z, post_t * 0.7, 0.85,
-                 post_t * 0.7)
-        # Pegangan (slanted bar)
-        _draw_slanted_bar(stair_x_top, top_y + 0.55, pz + side_z,
-                          stair_x_bot, 0.85,         pz + side_z,
+    for side_z in (-stair_d * 0.5 - 0.04, stair_d * 0.5 + 0.04):
+        # Tiang atas (sebagai sambungan ke deck)
+        draw_box(stair_x_top, deck_y, pz + side_z,
+                 post_t * 0.7, rail_h, post_t * 0.7)
+        # Tiang bawah (di tanah)
+        draw_box(stair_x_bot, 0.04, pz + side_z,
+                 post_t * 0.7, rail_h, post_t * 0.7)
+        # Pegangan miring (top rail)
+        _draw_slanted_bar(stair_x_top, deck_y + rail_h, pz + side_z,
+                          stair_x_bot, 0.04   + rail_h, pz + side_z,
                           radius=0.04)
 
-    # ── Bidang luncur kuning (slope dari tepi depan platform) ──
+    # ── Bidang luncur kuning ───────────────────────────────────
     x_top    = plat_x + plat_w * 0.5
-    y_top    = top_y + 0.04
+    y_top    = deck_y                  # rata dengan deck
     x_bottom = slide_x_end
-    y_bottom = 0.10
+    y_bottom = 0.18                    # sedikit di atas tanah
     half_w   = slide_w * 0.5
+    side_h   = 0.18                    # tinggi dinding samping perosotan
 
     # Permukaan luncur (atas)
     color(*YELLOW)
     glBegin(GL_QUADS)
-    glNormal3f(-0.5, 0.7, 0)
+    glNormal3f(-0.5, 0.7, 0)           # arahnya ke kiri-atas
     glVertex3f(x_top,    y_top,    pz - half_w)
     glVertex3f(x_top,    y_top,    pz + half_w)
     glVertex3f(x_bottom, y_bottom, pz + half_w)
     glVertex3f(x_bottom, y_bottom, pz - half_w)
     glEnd()
 
-    # Dinding samping di kedua sisi (oranye)
+    # Dinding samping perosotan (di atas permukaan, kiri & kanan)
     color(*YELLOW_D)
     for side in (-half_w, half_w):
+        outer_n = 1 if side > 0 else -1
         glBegin(GL_QUADS)
-        glNormal3f(0, 0, 1 if side > 0 else -1)
-        glVertex3f(x_top,    y_top,         pz + side)
-        glVertex3f(x_top,    y_top - rail_h, pz + side)
-        glVertex3f(x_bottom, y_bottom - 0.10, pz + side)
-        glVertex3f(x_bottom, y_bottom,        pz + side)
+        glNormal3f(0, 0, outer_n)
+        glVertex3f(x_top,    y_top,             pz + side)
+        glVertex3f(x_bottom, y_bottom,          pz + side)
+        glVertex3f(x_bottom, y_bottom + side_h, pz + side)
+        glVertex3f(x_top,    y_top    + side_h, pz + side)
+        glEnd()
+        # Tutup tepi atas dinding
+        glBegin(GL_QUADS)
+        glNormal3f(0, 1, 0)
+        glVertex3f(x_top,    y_top    + side_h, pz + side - 0.04 * outer_n)
+        glVertex3f(x_top,    y_top    + side_h, pz + side + 0.04 * outer_n)
+        glVertex3f(x_bottom, y_bottom + side_h, pz + side + 0.04 * outer_n)
+        glVertex3f(x_bottom, y_bottom + side_h, pz + side - 0.04 * outer_n)
+        glEnd()
+        # Tutup luar (samping luar dinding)
+        glBegin(GL_QUADS)
+        glNormal3f(0, 0, outer_n)
+        glVertex3f(x_top,    y_top,             pz + side + 0.04 * outer_n)
+        glVertex3f(x_top,    y_top    + side_h, pz + side + 0.04 * outer_n)
+        glVertex3f(x_bottom, y_bottom + side_h, pz + side + 0.04 * outer_n)
+        glVertex3f(x_bottom, y_bottom,          pz + side + 0.04 * outer_n)
         glEnd()
 
-    # Bibir bawah perosotan (run-out lip)
+    # Bibir bawah perosotan (run-out lip) — landai datar
     color(*YELLOW)
-    draw_box(slide_x_end + 0.18, y_bottom + 0.02, pz, 0.36, 0.10, slide_w)
+    lip_x = slide_x_end + 0.20
+    draw_box(lip_x, 0.04, pz, 0.36, 0.06, slide_w)
 
 
 def _draw_slanted_bar(x1, y1, z1, x2, y2, z2, radius=0.04):

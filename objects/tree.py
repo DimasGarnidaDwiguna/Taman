@@ -8,6 +8,7 @@ Pohon low-poly bergaya kartun:
 """
 
 import math
+from OpenGL.GL  import (glPushMatrix, glPopMatrix, glTranslatef, glRotatef)
 from core.primitives import color, draw_cylinder, draw_cone, draw_sphere, draw_box
 from core.layout    import is_blocked, register_zone
 
@@ -59,20 +60,55 @@ def draw_round_tree(x, z, scale=1.0):
 # ────────────────────────────────────────────────────────────────
 def draw_palm_tree(x, z, scale=1.0):
     h = 4.5 * scale
+    # Batang utama
     color(0.58, 0.42, 0.24)
     draw_cylinder(x, 0, z, 0.16 * scale, h, 10)
+    # Cincin batang
     color(0.48, 0.34, 0.18)
     for iy in range(7):
         draw_cylinder(x, iy * h / 7, z, 0.17 * scale, 0.08, 10)
 
-    # Daun melengkung ke 6 arah
+    # Buah kelapa di puncak (sphere coklat-hijau)
+    color(0.30, 0.20, 0.10)
+    for ang in (0, 1.5, 3.0, 4.5):
+        bx = x + 0.18 * scale * math.cos(ang)
+        bz = z + 0.18 * scale * math.sin(ang)
+        draw_sphere(bx, h + 0.05 * scale, bz, 0.10 * scale)
+
+    # Daun melengkung ke 8 arah dengan rotasi yang benar
+    leaf_len   = 1.6 * scale
+    leaf_width = 0.30 * scale
+    leaf_thick = 0.08 * scale
+    leaf_y     = h + 0.20 * scale
+
     color(0.24, 0.62, 0.18)
-    for i in range(6):
-        a = i * math.pi / 3
-        lx = x + 1.4 * scale * math.cos(a)
-        lz = z + 1.4 * scale * math.sin(a)
-        draw_box((x + lx) / 2, h + 0.2 * scale, (z + lz) / 2,
-                 1.6 * scale, 0.10 * scale, 0.30 * scale)
+    for i in range(8):
+        a = i * math.pi / 4
+        glPushMatrix()
+        # Tempatkan di puncak batang
+        glTranslatef(x, leaf_y, z)
+        # Putar sehingga daun mengarah ke +X lokal
+        glRotatef(math.degrees(-a), 0, 1, 0)
+        # Miringkan daun sedikit ke bawah supaya melengkung alami
+        glRotatef(20.0, 0, 0, 1)
+        # Geser sehingga pangkal daun di pusat & ujung menjauh
+        glTranslatef(leaf_len * 0.5, 0, 0)
+        # Daun box memanjang sumbu X lokal
+        draw_box(0, 0, 0, leaf_len, leaf_thick, leaf_width)
+        glPopMatrix()
+
+    # Daun lapisan kedua (lebih pendek, lebih tinggi)
+    color(0.30, 0.70, 0.22)
+    for i in range(8):
+        a = i * math.pi / 4 + math.pi / 8
+        glPushMatrix()
+        glTranslatef(x, leaf_y + 0.10 * scale, z)
+        glRotatef(math.degrees(-a), 0, 1, 0)
+        glRotatef(35.0, 0, 0, 1)
+        glTranslatef(leaf_len * 0.4, 0, 0)
+        draw_box(0, 0, 0, leaf_len * 0.8, leaf_thick * 0.9,
+                 leaf_width * 0.85)
+        glPopMatrix()
 
 
 # ────────────────────────────────────────────────────────────────

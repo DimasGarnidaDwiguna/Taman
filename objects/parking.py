@@ -7,10 +7,13 @@ deretan vertikal warna-warni cerah.
 """
 
 from OpenGL.GL  import (glPushMatrix, glPopMatrix, glTranslatef, glRotatef,
-                        glScalef)
+                        glScalef, glEnable, glDisable, glBlendFunc,
+                        glDepthMask, glColor4f,
+                        GL_BLEND, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+                        GL_FALSE, GL_TRUE)
 from OpenGL.GLU import gluNewQuadric, gluCylinder, gluDisk, gluDeleteQuadric
 from core.primitives import (
-    color, draw_box, draw_cylinder, draw_sphere
+    color, draw_box, draw_cylinder, draw_sphere, draw_cone
 )
 
 
@@ -131,18 +134,64 @@ def draw_parking():
         draw_car(-21.0, cz, cr, cg, cb, angle_deg=90.0)
 
     # ── Tiang lampu jalan parkir ─────────────────────────────────
-    color(0.30, 0.30, 0.34)
-    draw_cylinder(-26.0, 0.0, 12.0, 0.07, 4.0, 6)
-    color(0.85, 0.55, 0.10)
-    draw_box(-26.0, 4.05, 12.0, 0.30, 0.25, 0.25)
-    color(1.0, 0.96, 0.70)
-    draw_sphere(-25.6, 4.10, 12.0, 0.18)
+    for sign_z in (12.0, -12.0):
+        # Tiang
+        color(0.30, 0.30, 0.34)
+        draw_cylinder(-26.0, 0.0, sign_z, 0.07, 4.0, 6)
 
-    draw_cylinder(-26.0, 0.0, -12.0, 0.07, 4.0, 6)
-    color(0.85, 0.55, 0.10)
-    draw_box(-26.0, 4.05, -12.0, 0.30, 0.25, 0.25)
-    color(1.0, 0.96, 0.70)
-    draw_sphere(-25.6, 4.10, -12.0, 0.18)
+        # Lengan horizontal ke arah jalan (+X)
+        color(0.20, 0.20, 0.22)
+        draw_box(-25.55, 4.05, sign_z, 0.90, 0.07, 0.07)
+
+        # Rumah lampu (rangka logam tipis)
+        head_x = -25.10
+        color(0.16, 0.16, 0.18)
+        # 4 tiang sudut tipis
+        for sx in (-0.11, 0.11):
+            for sz in (-0.11, 0.11):
+                draw_box(head_x + sx, 3.78, sign_z + sz,
+                         0.03, 0.30, 0.03)
+        # Rim atas & bawah
+        color(0.22, 0.22, 0.24)
+        draw_box(head_x, 3.76, sign_z, 0.26, 0.04, 0.26)
+        draw_box(head_x, 4.06, sign_z, 0.26, 0.04, 0.26)
+        # Atap kerucut kecil
+        draw_cone(head_x, 4.10, sign_z, 0.16, 0.10, 6)
+
+        # Bohlam pijar (kuning hangat) di dalam sangkar
+        bulb_base_y = 3.80
+        bulb_r      = 0.07
+        bulb_cy     = bulb_base_y + 0.04 + 0.03 + bulb_r
+        # Ulir logam silver
+        color(0.78, 0.78, 0.82)
+        draw_cylinder(head_x, bulb_base_y, sign_z, 0.030, 0.04, 10)
+        color(0.55, 0.55, 0.58)
+        for i in range(2):
+            draw_cylinder(head_x, bulb_base_y + 0.008 + i * 0.012,
+                          sign_z, 0.032, 0.004, 10)
+        # Leher kaca
+        color(1.00, 0.92, 0.55)
+        draw_cone(head_x, bulb_base_y + 0.04, sign_z, bulb_r * 0.55,
+                  0.03, 10)
+        # Envelope bulat
+        color(1.00, 0.93, 0.50)
+        draw_sphere(head_x, bulb_cy, sign_z, bulb_r)
+        # Highlight pantulan
+        color(1.00, 1.00, 0.82)
+        draw_sphere(head_x, bulb_cy + bulb_r * 0.40, sign_z,
+                    bulb_r * 0.35)
+
+        # Panel kaca transparan di 4 sisi
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glDepthMask(GL_FALSE)
+        glColor4f(0.82, 0.92, 1.00, 0.30)
+        draw_box(head_x, 3.92, sign_z - 0.105, 0.20, 0.26, 0.012)
+        draw_box(head_x, 3.92, sign_z + 0.105, 0.20, 0.26, 0.012)
+        draw_box(head_x - 0.105, 3.92, sign_z, 0.012, 0.26, 0.20)
+        draw_box(head_x + 0.105, 3.92, sign_z, 0.012, 0.26, 0.20)
+        glDepthMask(GL_TRUE)
+        glDisable(GL_BLEND)
 
     # ── Palang otomatis di pintu masuk parkir ────────────────────
     color(0.20, 0.20, 0.22)

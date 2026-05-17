@@ -134,17 +134,19 @@ def draw_parking():
         draw_car(-21.0, cz, cr, cg, cb, angle_deg=90.0)
 
     # ── Tiang lampu jalan parkir ─────────────────────────────────
+    # Tiang dipasang di tepi parkir (x=-22) menghadap ke dalam
+    # area parkir, supaya tidak berdiri di tengah jalan aspal.
     for sign_z in (12.0, -12.0):
         # Tiang
         color(0.30, 0.30, 0.34)
-        draw_cylinder(-26.0, 0.0, sign_z, 0.07, 4.0, 6)
+        draw_cylinder(-22.0, 0.0, sign_z, 0.07, 4.0, 6)
 
-        # Lengan horizontal ke arah jalan (+X)
+        # Lengan horizontal ke arah parkir (+X)
         color(0.20, 0.20, 0.22)
-        draw_box(-25.55, 4.05, sign_z, 0.90, 0.07, 0.07)
+        draw_box(-21.55, 4.05, sign_z, 0.90, 0.07, 0.07)
 
         # Rumah lampu (rangka logam tipis)
-        head_x = -25.10
+        head_x = -21.10
         color(0.16, 0.16, 0.18)
         # 4 tiang sudut tipis
         for sx in (-0.11, 0.11):

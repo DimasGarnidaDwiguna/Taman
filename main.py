@@ -48,7 +48,7 @@ from core.lighting import setup_lighting
 
 
 WIDTH, HEIGHT = 1280, 720
-TARGET_FPS   = 60
+TARGET_FPS   = 144
 
 
 def print_controls():
@@ -100,6 +100,12 @@ def main():
     # antara rumput dan jalur yang ketinggiannya berdekatan).
     pygame.display.gl_set_attribute(pygame.GL_DEPTH_SIZE, 24)
     pygame.display.gl_set_attribute(pygame.GL_DOUBLEBUFFER, 1)
+    # VSync = frame pacing halus (tanpa ini, walau FPS tinggi gerakan
+    # bisa terasa stutter karena waktu antar frame tidak konsisten).
+    try:
+        pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, 1)
+    except Exception:
+        pass
     pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | OPENGL | RESIZABLE)
     pygame.display.set_caption("Taman Kota — OpenGL 3D | Python")
 

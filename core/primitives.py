@@ -3,17 +3,51 @@ core/primitives.py
 ------------------
 Fungsi menggambar bentuk dasar (primitif) pakai OpenGL murni.
 Semua fungsi menerima posisi dunia dan ukuran, lalu menggambar
-langsung — tidak ada state tersimpan.
+langsung — tidak ada state tersimpan di sisi kaller.
 
 Konvensi koordinat:
   x = kanan, y = atas, z = keluar layar (OpenGL default)
   Posisi y yang diterima selalu merupakan ALAS objek (y_bottom),
   kecuali sphere yang menggunakan titik PUSAT.
+
+Optimasi:
+  - Satu quadric GLU di-cache (dulu dibuat & dihapus tiap panggilan).
+  - Bentuk unit (cube, sphere, cylinder, cone, disk) dikompilasi ke
+    display list sekali, lalu dipanggil ulang dengan glScalef. Ini
+    memangkas ribuan panggilan Python→GL per frame.
+  - GL_NORMALIZE harus aktif (sudah di-enable di main.init_opengl)
+    supaya lighting tetap benar saat shape di-scale non-uniform.
 """
 
 import math
 from OpenGL.GL  import *
 from OpenGL.GLU import *
+
+
+# ────────────────────────────────────────────────────────────────
+# Cache: quadric tunggal + display list per bentuk unit
+# ────────────────────────────────────────────────────────────────
+_quadric = None
+_display_lists: dict = {}
+
+
+def _get_quadric():
+    global _quadric
+    if _quadric is None:
+        _quadric = gluNewQuadric()
+        gluQuadricNormals(_quadric, GLU_SMOOTH)
+    return _quadric
+
+
+def _get_or_build_list(key, build_fn):
+    lid = _display_lists.get(key)
+    if lid is None:
+        lid = glGenLists(1)
+        glNewList(lid, GL_COMPILE)
+        build_fn()
+        glEndList()
+        _display_lists[key] = lid
+    return lid
 
 
 # ────────────────────────────────────────────────────────────────
@@ -24,18 +58,9 @@ def color(r, g, b):
 
 
 # ────────────────────────────────────────────────────────────────
-# Kubus / Box
+# Builder bentuk unit (dipanggil sekali saat list pertama dibuat)
 # ────────────────────────────────────────────────────────────────
-def draw_box(x, y_bottom, z, width, height, depth):
-    """Menggambar kotak solid. y_bottom = alas kotak."""
-    glPushMatrix()
-    glTranslatef(x, y_bottom + height * 0.5, z)
-    glScalef(width, height, depth)
-    _unit_cube()
-    glPopMatrix()
-
-
-def _unit_cube():
+def _build_unit_cube():
     h = 0.5
     glBegin(GL_QUADS)
     # Depan (+Z)
@@ -65,21 +90,61 @@ def _unit_cube():
     glEnd()
 
 
+def _build_unit_cylinder(slices):
+    q = _get_quadric()
+    # gluCylinder digenerate sepanjang sumbu +Z lokal, kita rotasi
+    # supaya jadi sepanjang +Y dunia (sebelum di-scale oleh kaller).
+    glRotatef(-90.0, 1, 0, 0)
+    gluCylinder(q, 1.0, 1.0, 1.0, slices, 1)
+    gluDisk(q, 0, 1.0, slices, 1)
+    glTranslatef(0, 0, 1.0)
+    gluDisk(q, 0, 1.0, slices, 1)
+
+
+def _build_unit_cone(slices):
+    q = _get_quadric()
+    glRotatef(-90.0, 1, 0, 0)
+    gluCylinder(q, 1.0, 0.0, 1.0, slices, 1)
+    gluDisk(q, 0, 1.0, slices, 1)
+
+
+def _build_unit_sphere(slices, stacks):
+    q = _get_quadric()
+    gluSphere(q, 1.0, slices, stacks)
+
+
+def _build_unit_disk(slices):
+    q = _get_quadric()
+    glRotatef(-90.0, 1, 0, 0)
+    gluDisk(q, 0, 1.0, slices, 1)
+
+
+# ────────────────────────────────────────────────────────────────
+# Kubus / Box
+# ────────────────────────────────────────────────────────────────
+def draw_box(x, y_bottom, z, width, height, depth):
+    """Menggambar kotak solid. y_bottom = alas kotak."""
+    lid = _get_or_build_list(("cube",), _build_unit_cube)
+    glPushMatrix()
+    glTranslatef(x, y_bottom + height * 0.5, z)
+    glScalef(width, height, depth)
+    glCallList(lid)
+    glPopMatrix()
+
+
 # ────────────────────────────────────────────────────────────────
 # Silinder
 # ────────────────────────────────────────────────────────────────
 def draw_cylinder(x, y_bottom, z, radius, height, slices=16):
     """Silinder tegak lurus sumbu-Y."""
+    lid = _get_or_build_list(
+        ("cyl", slices),
+        lambda s=slices: _build_unit_cylinder(s),
+    )
     glPushMatrix()
     glTranslatef(x, y_bottom, z)
-    glRotatef(-90.0, 1, 0, 0)      # putar agar sumbu Z → Y
-    q = gluNewQuadric()
-    gluQuadricNormals(q, GLU_SMOOTH)
-    gluCylinder(q, radius, radius, height, slices, 1)
-    gluDisk(q, 0, radius, slices, 1)               # tutup bawah
-    glTranslatef(0, 0, height)
-    gluDisk(q, 0, radius, slices, 1)               # tutup atas
-    gluDeleteQuadric(q)
+    glScalef(radius, height, radius)
+    glCallList(lid)
     glPopMatrix()
 
 
@@ -87,14 +152,14 @@ def draw_cylinder(x, y_bottom, z, radius, height, slices=16):
 # Kerucut
 # ────────────────────────────────────────────────────────────────
 def draw_cone(x, y_bottom, z, radius, height, slices=16):
+    lid = _get_or_build_list(
+        ("cone", slices),
+        lambda s=slices: _build_unit_cone(s),
+    )
     glPushMatrix()
     glTranslatef(x, y_bottom, z)
-    glRotatef(-90.0, 1, 0, 0)
-    q = gluNewQuadric()
-    gluQuadricNormals(q, GLU_SMOOTH)
-    gluCylinder(q, radius, 0.0, height, slices, 1)
-    gluDisk(q, 0, radius, slices, 1)
-    gluDeleteQuadric(q)
+    glScalef(radius, height, radius)
+    glCallList(lid)
     glPopMatrix()
 
 
@@ -102,12 +167,14 @@ def draw_cone(x, y_bottom, z, radius, height, slices=16):
 # Bola
 # ────────────────────────────────────────────────────────────────
 def draw_sphere(x, y_center, z, radius, slices=16, stacks=12):
+    lid = _get_or_build_list(
+        ("sph", slices, stacks),
+        lambda s=slices, st=stacks: _build_unit_sphere(s, st),
+    )
     glPushMatrix()
     glTranslatef(x, y_center, z)
-    q = gluNewQuadric()
-    gluQuadricNormals(q, GLU_SMOOTH)
-    gluSphere(q, radius, slices, stacks)
-    gluDeleteQuadric(q)
+    glScalef(radius, radius, radius)
+    glCallList(lid)
     glPopMatrix()
 
 
@@ -115,13 +182,14 @@ def draw_sphere(x, y_center, z, radius, slices=16, stacks=12):
 # Disk (lingkaran datar)
 # ────────────────────────────────────────────────────────────────
 def draw_disk(x, y, z, radius, slices=32):
+    lid = _get_or_build_list(
+        ("disk", slices),
+        lambda s=slices: _build_unit_disk(s),
+    )
     glPushMatrix()
     glTranslatef(x, y, z)
-    glRotatef(-90.0, 1, 0, 0)
-    q = gluNewQuadric()
-    gluQuadricNormals(q, GLU_SMOOTH)
-    gluDisk(q, 0, radius, slices, 1)
-    gluDeleteQuadric(q)
+    glScalef(radius, 1.0, radius)
+    glCallList(lid)
     glPopMatrix()
 
 

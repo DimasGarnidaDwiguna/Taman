@@ -1,129 +1,153 @@
-# 🌳 TAMAN KOTA — Simulasi 3D OpenGL (Python)
+# TAMAN KOTA — Simulasi 3D OpenGL (Python)
 
-Versi modular dari simulasi taman kota 3D berbasis **PyOpenGL + Pygame**.  
-Setiap bagian taman dipisah menjadi modul tersendiri agar mudah dikembangkan.
+Simulasi 3D taman kota berbasis **PyOpenGL + Pygame** dengan kamera FPS, animasi
+pengunjung, air mancur, lentera kaca, dan banyak aset taman lainnya. Dibangun
+modular sehingga setiap kategori objek (vegetasi, struktur, furnitur,
+transportasi, dst.) tinggal di file-nya sendiri.
 
 ---
 
-## 📁 Struktur Proyek
+## Struktur Proyek
 
 ```
-taman_kota/
+Taman/
 │
 ├── main.py                  ← Titik masuk program (jalankan ini)
 ├── requirements.txt
 │
 ├── core/                    ← Sistem inti
-│   ├── camera.py            ← Kamera FPS (gerak + rotasi)
-│   ├── lighting.py          ← Setup cahaya OpenGL
-│   ├── primitives.py        ← Bentuk dasar (box, cylinder, sphere, dll)
-│   ├── renderer.py          ← Perakitan seluruh scene
-│   └── state.py             ← State animasi global (waktu, sudut)
+│   ├── camera.py            ← Kamera FPS (gerak + rotasi keyboard/mouse)
+│   ├── layout.py            ← Sistem zona untuk hindari tumpang tindih aset
+│   ├── lighting.py          ← Setup cahaya & material OpenGL
+│   ├── primitives.py        ← Box, cylinder, sphere, cone, disk (display list)
+│   ├── renderer.py          ← Perakitan seluruh scene per frame
+│   ├── state.py             ← State animasi global (waktu, sudut)
+│   └── text3d.py            ← Render teks 3D (papan nama, rambu)
 │
 ├── environment/             ← Lingkungan & infrastruktur
-│   ├── ground.py            ← Rumput, jalan, trotoar, jogging track
-│   ├── fence.py             ← Pagar besi taman
-│   ├── gate.py              ← Gerbang masuk
-│   └── sky.py               ← Langit berwarna gradient
+│   ├── ground.py            ← Rumput, jalan ring, trotoar, jalur, parkir
+│   ├── fence.py             ← Pagar besi mengelilingi taman
+│   ├── gate.py              ← Gerbang utama + papan "TAMAN KOTA" + info
+│   └── sky.py               ← Langit gradient cyan
 │
 └── objects/                 ← Objek / furnitur taman
-    ├── tree.py              ← Pohon pinus, bulat, palem
-    ├── flower.py            ← Bedeng bunga & semak
-    ├── fountain.py          ← Air mancur animasi
-    ├── pond.py              ← Kolam ikan, angsa, jembatan kayu
-    ├── gazebo.py            ← Gazebo oktagonal
-    ├── pergola.py           ← Pergola kayu berranaman
-    ├── playground.py        ← Area bermain (perosotan, ayunan, dll)
-    ├── toilet.py            ← Toilet umum + panel surya
-    ├── bench.py             ← Bangku taman
-    ├── lamp.py              ← Lampu taman
-    ├── trash_bin.py         ← Tempat sampah 3 warna
+    ├── tree.py              ← Pinus, pohon mahkota bulat, palem
+    ├── flower.py            ← Bedeng bunga, semak, tanaman pagar
+    ├── fountain.py          ← Air mancur animasi (semburan parabola)
+    ├── pond.py              ← Kolam, ikan, angsa berenang, jembatan kayu
+    ├── gazebo.py            ← Gazebo oktagonal atap dua tingkat
+    ├── pergola.py           ← Pergola kayu dengan sulur merambat
+    ├── playground.py        ← Perosotan, ayunan, jungkat-jungkit, palang panjat
+    ├── toilet.py            ← Toilet umum + panel surya + signage
+    ├── bench.py             ← Bangku taman kayu kaki besi
+    ├── lamp.py              ← Lampu taman klasik (sangkar kaca + bohlam)
+    ├── trash_bin.py         ← Tong sampah 3 warna (organik/anorganik/B3)
     ├── rock.py              ← Batu alam dekoratif
-    ├── bike_rack.py         ← Rak + sepeda terparkir
-    ├── parking.py           ← Parkir mobil + garis + palang
-    └── person.py            ← Manusia berjalan (animasi)
+    ├── bike_rack.py         ← Rak parkir + 5 sepeda warna-warni
+    ├── parking.py           ← Mobil parkir, lampu jalan, palang, rambu "P"
+    └── person.py            ← Manusia low-poly dengan animasi berjalan/berlari
 ```
 
 ---
 
-## 🚀 Cara Menjalankan
+## Cara Menjalankan
 
-### Langkah 1 — Pastikan Python 3.8+
+### 1. Pastikan Python 3.8+
 
 ```bash
 python --version
 ```
 
-### Langkah 2 — Install dependensi
+### 2. Install dependensi
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> **Windows:** Jika `PyOpenGL_accelerate` gagal, cukup:
+> Jika `PyOpenGL_accelerate` gagal di-build di Windows, cukup install yang dasar:
 > ```bash
 > pip install pygame PyOpenGL
 > ```
 
-### Langkah 3 — Jalankan dari dalam folder `taman_kota/`
+### 3. Jalankan
+
+Dari folder proyek (`Taman/`):
 
 ```bash
 python main.py
 ```
 
-Atau dari direktori induk:
+> **VS Code:** buka `main.py`, tekan **F5**.
 
-```bash
-python taman_kota/main.py
-```
-
-> **VS Code:** Buka file `main.py`, tekan **F5**.
+Program berjalan pada resolusi 1280×720, target frame rate 144 FPS, dan VSync
+aktif untuk frame pacing yang halus.
 
 ---
 
-## 🎮 Kontrol Navigasi
+## Kontrol Navigasi
 
-| Tombol | Aksi |
-|--------|------|
-| `W` | Maju |
-| `S` | Mundur |
-| `A` | Geser kiri |
-| `D` | Geser kanan |
-| `Q` | Naik |
-| `E` | Turun |
-| `← →` (Panah) | Putar kamera horizontal |
-| `↑ ↓` (Panah) | Tengok atas/bawah |
-| Klik kiri + geser mouse | Rotasi kamera |
-| `ESC` | Keluar |
+| Tombol                  | Aksi                          |
+| ----------------------- | ----------------------------- |
+| `W` / `S`               | Maju / mundur                 |
+| `A` / `D`               | Geser kiri / kanan            |
+| `Q` / `E`               | Naik / turun                  |
+| `←` / `→`               | Putar kamera (yaw)            |
+| `↑` / `↓`               | Tengok atas / bawah (pitch)   |
+| Klik kiri + geser mouse | Rotasi kamera bebas           |
+| `ESC`                   | Keluar                        |
 
----
-
-## 🏛️ Isi Taman
-
-| Objek | Keterangan |
-|-------|------------|
-| 🌲 Pohon pinus, bulat, palem | Skala & posisi bervariasi |
-| ⛲ Air mancur | Semburan parabola animasi |
-| 🦢 Kolam ikan + angsa | Angsa berenang melingkar |
-| 🌉 Jembatan kayu | Di ujung kolam |
-| 🏠 Gazebo oktagonal | Atap dua tingkat + bangku dalam |
-| 🌿 Pergola | Sulur & bunga merambat |
-| 🛝 Area bermain | Perosotan, ayunan, jungkat-jungkit, palang panjat |
-| 🚽 Toilet umum | Panel surya, rambu difabel, wastafel luar |
-| 🪑 Bangku taman | 15 bangku tersebar |
-| 💡 Lampu taman | 20 tiang lampu |
-| 🗑️ Tempat sampah | 3 warna (organik/anorganik/B3) di tiap klaster |
-| 🪨 Batu alam | 16 batu dekoratif |
-| 🚲 Rak sepeda | 5 sepeda terparkir |
-| 🚗 Area parkir | 9 mobil + garis + palang otomatis |
-| 🧍 Pengunjung | 25+ karakter animasi berjalan/berlari |
-| 🌸 Bedeng bunga | 15 bedeng warna-warni |
-| 🏃 Jogging track | 3 pelari animasi |
-| 🌅 Langit | Gradient biru horizon ke atas |
+Pitch dibatasi ±89° agar kamera tidak terbalik. Saat jendela di-resize,
+proyeksi otomatis menyesuaikan rasio aspek baru.
 
 ---
 
-## 🔧 Troubleshooting
+## Isi Taman
+
+| Objek                          | Keterangan                                                        |
+| ------------------------------ | ----------------------------------------------------------------- |
+| 🌲 Pohon pinus, bulat, palem   | Skala & posisi bervariasi, tersebar di perimeter dan area dalam   |
+| 🌸 Bedeng bunga                | 4 bedeng mengelilingi air mancur + bedeng tersebar warna-warni    |
+| 🌿 Semak hijau                 | Cluster bola hijau di sudut-sudut & sepanjang pagar depan         |
+| ⛲ Air mancur                   | Tiga tingkat dengan semburan parabola animasi                     |
+| 🦢 Kolam ikan + angsa          | Angsa berenang melingkar, ikan-ikan kecil di permukaan            |
+| 🌉 Jembatan kayu               | Menyeberangi ujung kolam                                          |
+| 🏠 Gazebo oktagonal            | Atap merah dua tingkat, bangku internal                           |
+| 🌿 Pergola                     | Rangka kayu dengan sulur & bunga merambat                         |
+| 🛝 Area bermain                | Perosotan, ayunan, jungkat-jungkit, palang panjat di area pasir   |
+| 🚽 Toilet umum                 | Atap pelana, panel surya, signage gender, wastafel luar           |
+| 🪑 Bangku taman                | Tersebar mengelilingi air mancur dan jalur                        |
+| 💡 Lampu taman klasik          | Tiang tinggi, sangkar logam, kaca transparan, bohlam kuning hangat |
+| 🗑️ Tong sampah 3 warna         | Organik (hijau), anorganik (kuning), B3 (merah) — 10 klaster      |
+| 🪨 Batu alam                   | 16 batu dekoratif di pinggir taman                                |
+| 🚲 Rak sepeda                  | 5 sepeda warna-warni + papan "PARKIR SEPEDA"                      |
+| 🚗 Area parkir                 | 9 mobil low-poly, garis slot putih, palang otomatis, rambu "P"    |
+| 🧍 Pengunjung                  | Karakter berjalan / berlari dengan ayunan kaki & lengan           |
+| � Langit                      | Gradient cyan ke biru muda + fog horizon                          |
+
+Penempatan aset dijaga oleh `core/layout.py`: tiap struktur besar mendaftarkan
+zona terlarangnya, dan aset kecil seperti pohon, bunga, lampu, atau orang akan
+otomatis di-skip kalau posisinya bertabrakan.
+
+---
+
+## Catatan Teknis
+
+- **Display lists** dipakai di `core/primitives.py` untuk shape unit
+  (cube, cylinder, cone, sphere, disk). Tiap kombinasi `(slices, stacks)`
+  dikompilasi sekali, lalu setiap pemanggilan tinggal `glScalef` + `glCallList`.
+  Ini memangkas overhead Python→GL drastis dibanding membuat-hapus quadric per
+  panggilan.
+- **Depth buffer 24-bit** diminta eksplisit (`GL_DEPTH_SIZE = 24`) agar tidak
+  ada z-fighting antara rumput dan jalur yang ketinggiannya berdekatan.
+- **Polygon offset** dipakai saat menggambar jalur paver di atas rumput.
+- **Fog linear** menyatukan objek jauh ke warna horizon untuk kesan kedalaman.
+- **Animasi** dijalankan dari satu `AnimationState.time` global, jadi semua
+  pengunjung, ikan, angsa, dan semburan air sinkron tanpa perlu mempunyai
+  jam masing-masing.
+
+---
+
+## Troubleshooting
 
 **`No module named 'pygame'`**
 ```bash
@@ -136,16 +160,17 @@ pip install PyOpenGL
 ```
 
 **Layar hitam / blank**
-- Update driver GPU
-- Coba jalankan lewat Command Prompt (bukan terminal VS Code)
+- Update driver GPU.
+- Coba jalankan lewat Command Prompt biasa, bukan terminal bawaan IDE.
 
-**Windows: Error DLL OpenGL**
+**Windows: error DLL OpenGL**
 ```bash
 pip uninstall PyOpenGL PyOpenGL_accelerate
 pip install PyOpenGL PyOpenGL_accelerate
 ```
 
-**FPS lambat**
-- Target 60 FPS; normal jika turun saat banyak objek
-- Tutup aplikasi berat lainnya
-#
+**FPS terasa lambat / stutter**
+- Target 144 FPS dengan VSync aktif. Bila monitor 60 Hz, frame akan dikunci 60.
+- Tutup aplikasi berat yang merebut GPU.
+- Jika perangkat lemah, turunkan `TARGET_FPS` di `main.py` atau matikan
+  `GL_SWAP_CONTROL` agar tidak terkunci VSync.

@@ -166,14 +166,6 @@ def draw_ground():
         draw_flat_quad(-22.0, pz - 0.05, -20.0, pz + 0.05, y=0.012)
         pz += 3.0
 
-    # Slot difabel (biru terang)
-    color(0.20, 0.40, 0.85)
-    draw_flat_quad(-22.0, -3.0, -20.0, 0.0, y=0.013)
-    color(*MARK_WHITE)
-    draw_flat_quad(-22.0, -3.05, -20.0, -2.95, y=0.014)
-    draw_flat_quad(-22.0, -0.05, -20.0,  0.05, y=0.014)
-    draw_disk(-21.0, 0.015, -1.5, 0.45, 16)
-
     # ── Driveway: hubungkan parkir dengan jalan atas ─────────────
     # Jalan atas: z=22..28, parkir berakhir di z=16. Driveway
     # menyambung x=-22..-20, z=16..22 sebagai aspal.
@@ -196,14 +188,21 @@ def draw_ground():
 
 
 def _ring_path(cx, cz, rx, rz, segs, width, y=0.02):
-    for i in range(segs):
-        a1 = i       / segs * 2 * math.pi
-        a2 = (i + 1) / segs * 2 * math.pi
-        draw_path_segment(
-            cx + rx * math.cos(a1), cz + rz * math.sin(a1),
-            cx + rx * math.cos(a2), cz + rz * math.sin(a2),
-            width, y=y,
-        )
+    """Annulus mulus: tepi dalam & luar pakai radius konstan, sehingga
+    sambungan antar segmen share vertex (tidak ada 'gigi gergaji')."""
+    half = width * 0.5
+    rxi, rxo = rx - half, rx + half
+    rzi, rzo = rz - half, rz + half
+    glBegin(GL_QUAD_STRIP)
+    glNormal3f(0, 1, 0)
+    for i in range(segs + 1):
+        a = i / segs * 2 * math.pi
+        ca, sa = math.cos(a), math.sin(a)
+        # Outer
+        glVertex3f(cx + rxo * ca, y, cz + rzo * sa)
+        # Inner
+        glVertex3f(cx + rxi * ca, y, cz + rzi * sa)
+    glEnd()
 
 
 def draw_all_paths():
@@ -217,9 +216,16 @@ def draw_all_paths():
     draw_path_segment(0, 16.0, 0, 5.0, 3.0)
 
     # ── Jalur melingkar utama (r=7) ───────────────────────────────
-    _ring_path(0, 0, 7.0, 7.0, 48, 1.6)
+    RING_R     = 7.0
+    RING_WIDTH = 1.6
+    _ring_path(0, 0, RING_R, RING_R, 96, RING_WIDTH)
 
     # ── Jalur radial ─────────────────────────────────────────────
+    # Lebar 1.4 m. Disk simpul harus ≥ setengah lebar terbesar yang
+    # bertemu di sana; pakai 0.9 m biar kawin halus dengan ring 1.6.
+    PATH_W   = 1.4
+    JOINT_R  = 0.90
+
     radial = [
         ( 0,  5,  -8, -2),
         ( 0,  5,   8, -2),
@@ -230,7 +236,27 @@ def draw_all_paths():
         ( 0, -7,   0,-16),
     ]
     for x1, z1, x2, z2 in radial:
-        draw_path_segment(x1, z1, x2, z2, 1.4)
+        draw_path_segment(x1, z1, x2, z2, PATH_W)
+
+    # ── Disk penutup di setiap simpul agar sudut tidak menganga ──
+    # Kumpulkan endpoint unik dari semua radial.
+    endpoints = set()
+    for x1, z1, x2, z2 in radial:
+        endpoints.add((x1, z1))
+        endpoints.add((x2, z2))
+    for ex, ez in endpoints:
+        draw_disk(ex, 0.022, ez, JOINT_R, slices=20)
+
+    # Tutup juga titik tempat radial menyentuh ring (menghilangkan
+    # gigi gergaji di perpotongan ring × radial).
+    ring_joints = [
+        ( 0,  5),  ( 0, -7),
+        (-5,  5),  ( 5,  5),    # perkiraan, tidak dipakai langsung
+    ]
+    for ex, ez in [( 0,  5), ( 0, -7)]:
+        # Sudah ditutup di atas via endpoints, tapi pakai disk lebih
+        # besar agar menutup pertemuan radial DAN ring sekaligus.
+        draw_disk(ex, 0.024, ez, JOINT_R + 0.05, slices=20)
 
     glDisable(GL_POLYGON_OFFSET_FILL)
     glPolygonOffset(0.0, 0.0)

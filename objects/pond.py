@@ -76,13 +76,21 @@ def draw_pond(anim_time: float, bird_angle_deg: float):
         draw_sphere(lx, 0.28, lz, 0.10)
 
     # ── Angsa berenang (animasi) ─────────────────────────────────
-    # Orbit dirancang agar saat angsa lewat sisi timur kolam, ia
-    # melintasi tepat di tengah gorong-gorong di bawah dek.
+    # Orbit kompak di area air utama (sisi barat-tengah kolam).
+    # Pusat orbit sengaja digeser ke kiri dari pusat kolam supaya
+    # badan angsa TIDAK pernah masuk area jembatan di sisi timur,
+    # sehingga aman dari pilar batu (x≈12.68) dan tembok batu
+    # gorong-gorong (mulai x≈12.65, di z=-2.30 / z=-3.70).
+    #
+    #   batas timur orbit = swan_cx + swan_rx + body_half (≈0.45)
+    #   12.10 + 0.45 = 12.55  <  12.65  → bebas tabrakan.
     ba = math.radians(bird_angle_deg)
+    swan_cx, swan_cz = px - 0.5, pz
+    swan_rx, swan_rz = 1.50, 0.55
     for idx, offset_a in enumerate([0.0, math.pi * 0.85]):
         a = ba + offset_a
-        sx = px + 1.85 * math.cos(a)
-        sz = pz + 0.85 * math.sin(a)
+        sx = swan_cx + swan_rx * math.cos(a)
+        sz = swan_cz + swan_rz * math.sin(a)
         _draw_swan(sx, sz, a + math.pi * 0.5, anim_time + idx * 1.5)
 
     # ── Jembatan kayu TINGGI dengan gorong-gorong ────────────────
